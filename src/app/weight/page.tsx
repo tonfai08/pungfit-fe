@@ -72,7 +72,7 @@ export default function WeightPage() {
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-bg-theme p-4 pt-18">
+    <div className="min-h-screen bg-bg-theme p-4 pt-20">
       <MenuBar />
 
       <div className="flex justify-end mb-2">

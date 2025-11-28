@@ -10,16 +10,16 @@ export default function BottomMenuBar() {
   const pathname = usePathname();
 
   const menuItems = [
-    { label: "หน้าหลัก", icon: <FaHome />, path: "/dashboard"},
     { label: "อาหาร", icon: <IoFastFoodOutline />, path: "/meals" },
-    { label: "กลุ่ม", icon: <FaUsers />, path: "/group" }, // ✅ เมนูกลาง
+    { label: "กลุ่ม", icon: <FaUsers />, path: "/group" },
+    { label: "หน้าหลัก", icon: <FaHome />, path: "/dashboard",isMain:true},
     { label: "น้ำหนัก", icon: <FaChartLine />, path: "/weight" },
     { label: "เพิ่มเติม", icon: <BsThreeDotsVertical />, path: "/more" },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 w-full bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50">
-      <div className="flex justify-around items-center h-16 relative">
+      <div className="flex justify-around items-center h-16 relative mx-4 my-2">
         {menuItems.map((item) => {
           const isActive = pathname === item.path;
 

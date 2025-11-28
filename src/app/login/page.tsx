@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { isLoggedIn, login } from "@/lib/auth";
+import { isLoggedIn, login } from "@/lib/api/auth";
 import Image from "next/image";
 
 export default function LoginPage() {

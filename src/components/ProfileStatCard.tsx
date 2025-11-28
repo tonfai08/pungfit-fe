@@ -10,6 +10,7 @@ interface ProfileStatCardProps {
   bodyFat?: number | string;
   gender?: string;
   age?: number | string;
+  bmr?: number | string;
 }
 
 export default function ProfileStatCard({
@@ -18,30 +19,31 @@ export default function ProfileStatCard({
   bodyFat,
   gender,
   age,
+  bmr,
 }: ProfileStatCardProps) {
   const router = useRouter();
   // ✅ แปลงค่าเป็น number
-  const w = Number(weight);
-  const h = Number(height);
-  const a = Number(age);
-  
-  // ✅ คำนวณ BMR
-  let bmr = 0;
-  if (gender === "male") {
-    bmr = 10 * w + 6.25 * h - 5 * a + 5;
-  } else if (gender === "female") {
-    bmr = 10 * w + 6.25 * h - 5 * a - 161;
-  } else {
-    bmr = 10 * w + 6.25 * h - 5 * a;
-  }
+  // const w = Number(weight);
+  // const h = Number(height);
+  // const a = Number(age);
+
+  // // ✅ คำนวณ BMR
+  // let bmr = 0;
+  // if (gender === "male") {
+  //   bmr = 10 * w + 6.25 * h - 5 * a + 5;
+  // } else if (gender === "female") {
+  //   bmr = 10 * w + 6.25 * h - 5 * a - 161;
+  // } else {
+  //   bmr = 10 * w + 6.25 * h - 5 * a;
+  // }
 
   // ✅ สมมติระดับกิจกรรมปานกลาง (1.55)
-  const TDEE = Math.round(bmr * 1.55);
+  // const TDEE = Math.round(bmr * 1.55);
 
   return (
     <div className="grid grid-cols-2 gap-3 w-full max-w-full md:max-w-2/4">
       {/* น้ำหนัก */}
-       <div
+      <div
         onClick={() => router.push("/weight")}
         className="bg-white h-[130px] w-full p-4 rounded-lg flex flex-col items-center justify-center shadow hover:shadow-md hover:cursor-pointer transition"
       >
@@ -72,9 +74,9 @@ export default function ProfileStatCard({
       <div className="bg-white h-[130px] w-full p-4 rounded-lg flex flex-col items-center justify-center shadow hover:shadow-md transition">
         <FaFireAlt className="text-accent text-4xl mb-2" />
         <p className="text-sm font-medium text-gray-700 text-center">
-          พลังงานที่ใช้ต่อวัน<br />
+          BMR<br />
           <span className="font-semibold text-lg text-gray-800">
-            {isNaN(TDEE) ? "-" : TDEE.toLocaleString()}
+            {bmr }
           </span>{" "}
           kcal
         </p>

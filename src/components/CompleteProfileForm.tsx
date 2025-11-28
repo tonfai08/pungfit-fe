@@ -1,7 +1,7 @@
 "use client";
 
+import { updateUser } from "@/lib/api/auth";
 import { useState, useEffect } from "react";
-import api from "@/lib/api";
 
 interface ProfileData {
   weight?: number | string;
@@ -9,6 +9,7 @@ interface ProfileData {
   bodyFat?: number | string;
   gender?: string;
   age?: number | string;
+  activity_level?: string;
 }
 
 export default function CompleteProfileForm({
@@ -17,6 +18,7 @@ export default function CompleteProfileForm({
   bodyFat,
   gender,
   age,
+  activity_level,
 }: ProfileData) {
   const [form, setForm] = useState({
     weight_kg: "",
@@ -24,6 +26,7 @@ export default function CompleteProfileForm({
     body_fat_percent: "",
     gender: "",
     age: "",
+    activity_level: "", 
   });
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function CompleteProfileForm({
       body_fat_percent: bodyFat ? String(bodyFat) : "",
       gender: gender ? String(gender) : "",
       age: age ? String(age) : "",
+      activity_level: "",
     });
   }, [weight, height, bodyFat, gender, age]);
 
@@ -48,23 +52,8 @@ export default function CompleteProfileForm({
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      await api.put("api/users/me", form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await updateUser(form)
 
-      // ✅ update localStorage ด้วยข้อมูลล่าสุด
-      localStorage.setItem(
-        "userProfile",
-        JSON.stringify({
-          weight: form.weight_kg || "",
-          height: form.height_cm || "",
-          bodyFat: form.body_fat_percent || "",
-          gender: form.gender || "",
-          age: form.age || "",
-        })
-      );
 
       alert("บันทึกข้อมูลเรียบร้อยแล้ว!");
       window.location.reload();
@@ -163,6 +152,23 @@ export default function CompleteProfileForm({
             <option value="" disabled>เลือกเพศ</option>
             <option value="male">ชาย</option>
             <option value="female">หญิง</option>
+          </select>
+        </div>
+
+        <div className="mb-6">
+          <label className="block mb-1 font-medium">ระดับกิจกรรม</label>
+          <select
+            value={form.activity_level || ""}
+            onChange={(e) => setForm({ ...form, activity_level: e.target.value })}
+            className="border border-accent focus:border-accent-hover focus:ring-1 focus:ring-accent-hover rounded-md w-full px-3 py-2 outline-none bg-white"
+            required
+          >
+            <option value="" disabled>เลือกระดับกิจกรรม</option>
+            <option value="sedentary">นั่งทำงาน / ไม่ออกกำลังกาย</option>
+            <option value="light">ออกกำลังกายเล็กน้อย (1–3 วัน/สัปดาห์)</option>
+            <option value="moderate">ออกกำลังกายปานกลาง (3–5 วัน/สัปดาห์)</option>
+            <option value="active">ออกกำลังกายหนัก (6–7 วัน/สัปดาห์)</option>
+            <option value="very_active">ออกกำลังกายหนักมาก / ใช้แรงงาน</option>
           </select>
         </div>
 
