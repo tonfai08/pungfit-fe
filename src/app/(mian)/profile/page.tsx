@@ -27,6 +27,7 @@ interface UserBody {
   bodyFat?: string | number;
   gender?: string;
   age?: string | number;
+  activity_level?: string;
 }
 
 export default function ProfilePage() {
@@ -46,6 +47,7 @@ export default function ProfilePage() {
     bodyFat: "",
     gender: "",
     age: "",
+    activity_level: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -177,10 +179,8 @@ export default function ProfilePage() {
     return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
 
   return (
-    <div className="min-h-screen bg-bg-theme p-4 pt-20">
-      <MenuBar />
-
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
+    <>
+      <div className="w-full bg-white rounded-lg shadow p-6 text-center">
         {/* ✅ รูปโปรไฟล์ */}
         <div className="flex flex-col items-center mb-4">
           {profileImageUrl ? (
@@ -276,41 +276,80 @@ export default function ProfilePage() {
         title="แก้ไขข้อมูลทั่วไป"
       >
         <div className="space-y-3">
-          <input
-            type="number"
-            placeholder="น้ำหนัก (กก.)"
-            value={form.weight}
-            onChange={(e) => setForm({ ...form, weight: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-          <input
-            type="number"
-            placeholder="ส่วนสูง (ซม.)"
-            value={form.height}
-            onChange={(e) => setForm({ ...form, height: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-          <input
-            type="number"
-            placeholder="ไขมัน (%)"
-            value={form.bodyFat}
-            onChange={(e) => setForm({ ...form, bodyFat: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-          <input
-            type="number"
-            placeholder="อายุ"
-            value={form.age}
-            onChange={(e) => setForm({ ...form, age: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
-          <input
-            type="text"
-            placeholder="เพศ (ชาย/หญิง)"
-            value={form.gender}
-            onChange={(e) => setForm({ ...form, gender: e.target.value })}
-            className="w-full border rounded-md px-3 py-2"
-          />
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">น้ำหนัก (กก.)</label>
+            <input
+              type="number"
+              placeholder="น้ำหนัก (กก.)"
+              value={form.weight}
+              onChange={(e) => setForm({ ...form, weight: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">ส่วนสูง (ซม.)</label>
+            <input
+              type="number"
+              placeholder="ส่วนสูง (ซม.)"
+              value={form.height}
+              onChange={(e) => setForm({ ...form, height: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">ไขมัน (%)</label>
+            <input
+              type="number"
+              placeholder="ไขมัน (%)"
+              value={form.bodyFat}
+              onChange={(e) => setForm({ ...form, bodyFat: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-gray-700">อายุ</label>
+            <input
+              type="number"
+              placeholder="อายุ"
+              value={form.age}
+              onChange={(e) => setForm({ ...form, age: e.target.value })}
+              className="w-full border rounded-md px-3 py-2"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-1 font-medium">เพศ</label>
+            <select
+              value={form.gender}
+              onChange={(e) => setForm({ ...form, gender: e.target.value })}
+              className="border border-accent focus:border-accent-hover focus:ring-1 focus:ring-accent-hover rounded-md w-full px-3 py-2 outline-none bg-white"
+              required
+            >
+              <option value="" disabled>เลือกเพศ</option>
+              <option value="male">ชาย</option>
+              <option value="female">หญิง</option>
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="block mb-1 font-medium">ระดับกิจกรรม</label>
+            <select
+              value={form.activity_level || ""}
+              onChange={(e) => setForm({ ...form, activity_level: e.target.value })}
+              className="border border-accent focus:border-accent-hover focus:ring-1 focus:ring-accent-hover rounded-md w-full px-3 py-2 outline-none bg-white"
+              required
+            >
+              <option value="" disabled>เลือกระดับกิจกรรม</option>
+              <option value="sedentary">นั่งทำงาน / ไม่ออกกำลังกาย</option>
+              <option value="light">ออกกำลังกายเล็กน้อย (1–3 วัน/สัปดาห์)</option>
+              <option value="moderate">ออกกำลังกายปานกลาง (3–5 วัน/สัปดาห์)</option>
+              <option value="active">ออกกำลังกายหนัก (6–7 วัน/สัปดาห์)</option>
+              <option value="very_active">ออกกำลังกายหนักมาก / ใช้แรงงาน</option>
+            </select>
+          </div>
         </div>
         <button
           onClick={handleSaveInfo}
@@ -354,7 +393,6 @@ export default function ProfilePage() {
         </div>
       </Modal>
 
-      <BottomMenuBar />
-    </div>
+     </>
   );
 }

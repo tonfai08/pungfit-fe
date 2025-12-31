@@ -44,8 +44,7 @@ export default function GroupPage() {
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-bg-theme pb-20 pt-16">
-      <MenuBar />
+    <>
 
       <div className="max-w-md mx-auto p-4">
         <h1 className="text-xl font-semibold mb-4 text-center text-accent">
@@ -79,8 +78,6 @@ export default function GroupPage() {
           </div>
         )}
       </div>
-
-      <BottomMenuBar />
-    </div>
+    </>
   );
 }

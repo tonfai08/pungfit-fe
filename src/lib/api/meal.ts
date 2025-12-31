@@ -78,3 +78,22 @@ export async function createMealRecord(payload: MealInput) {
 
   return res.json();
 }
+
+export async function deleteMealRecord(id: string) {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No token");
+
+  const res = await fetch(`${API_BASE_URL}/meals/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Failed to delete meal: ${msg}`);
+  }
+
+  return res.json().catch(() => ({}));
+}

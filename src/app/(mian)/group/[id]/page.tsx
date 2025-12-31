@@ -89,8 +89,7 @@ export default function GroupDetailPage() {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
   return (
-    <div className="min-h-screen bg-bg-theme pb-20 pt-16">
-      <MenuBar />
+    <>
 
       <div className="max-w-md mx-auto p-4">
         <h1 className="text-xl font-semibold text-center text-accent mb-2">
@@ -149,8 +148,6 @@ export default function GroupDetailPage() {
           )}
         </div>
       </div>
-
-      <BottomMenuBar />
-    </div>
+    </>
   );
 }

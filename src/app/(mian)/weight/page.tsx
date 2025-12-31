@@ -2,20 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { isLoggedIn } from "@/lib/api/auth";
 import { getWeightHistory, updateWeightToday } from "@/lib/api/weight";
 import MenuBar from "@/components/MenuBar";
 import Modal from "@/components/Modal";
 import BottomMenuBar from "@/components/BottomMenuBar";
+import WeightChart from "@/components/WeightChart";
 
 interface WeightRecord {
   date: string;
@@ -72,9 +64,7 @@ export default function WeightPage() {
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-bg-theme p-4 pt-20">
-      <MenuBar />
-
+   <>
       <div className="flex justify-end mb-2">
         <button
           className="bg-white text-accent px-6 py-2 rounded-lg shadow hover:bg-accent transition"
@@ -89,27 +79,7 @@ export default function WeightPage() {
       ) : (
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow p-4">
           <h1 className="text-xl font-semibold text-center mb-6">ประวัติน้ำหนัก</h1>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                angle={-45}
-                textAnchor="end"
-                height={60}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis domain={["dataMin - 1", "dataMax + 1"]} />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="weight_kg"
-                stroke="#d6a27a"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <WeightChart data={data} />
         </div>
       )}
 
@@ -133,7 +103,6 @@ export default function WeightPage() {
           บันทึก
         </button>
       </Modal>
-      <BottomMenuBar /> 
-    </div>
+    </>
   );
 }

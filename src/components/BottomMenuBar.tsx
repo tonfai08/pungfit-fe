@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { FaHome, FaChartLine, FaUsers } from "react-icons/fa";
+import { FaHome, FaDumbbell, FaUsers } from "react-icons/fa";
 import { IoFastFoodOutline } from "react-icons/io5";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
@@ -13,13 +13,13 @@ export default function BottomMenuBar() {
     { label: "อาหาร", icon: <IoFastFoodOutline />, path: "/meals" },
     { label: "กลุ่ม", icon: <FaUsers />, path: "/group" },
     { label: "หน้าหลัก", icon: <FaHome />, path: "/dashboard",isMain:true},
-    { label: "น้ำหนัก", icon: <FaChartLine />, path: "/weight" },
-    { label: "เพิ่มเติม", icon: <BsThreeDotsVertical />, path: "/more" },
+    { label: "ออกกำลังกาย", icon: <FaDumbbell />, path: "/exercise" },
+    { label: "เพิ่มเติม", icon: <BsThreeDotsVertical />, path: "/profile" },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50">
-      <div className="flex justify-around items-center h-16 relative mx-4 my-2">
+    <div className="fixed bottom-0 left-0 w-full flex justify-center bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50">
+      <div className="flex flex-1 justify-around items-center h-16 relative mx-4 my-2 max-w-full md:max-w-2/4">
         {menuItems.map((item) => {
           const isActive = pathname === item.path;
 
@@ -47,7 +47,7 @@ export default function BottomMenuBar() {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className="flex flex-col items-center justify-center text-sm transition"
+              className="flex flex-col flex-1 items-center justify-center text-sm transition"
             >
               <div
                 className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
