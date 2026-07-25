@@ -1,26 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { message } from "antd";
+import Modal from "@/components/Modal";
+import PageLoader from "@/components/PageLoader";
+import { staggerContainer, staggerItem } from "@/lib/motion";
+import { isLoggedIn } from "@/lib/api/auth";
+import { analyzeFoodImage, getFoodByBarcode, type Food } from "@/lib/api/food";
+import {
+  createMealRecord,
+  deleteMealRecord,
+  getMealsForLastDays,
+} from "@/lib/api/meal";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { useRouter } from "next/navigation";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import {
-  BarcodeScanner,
   BarcodeFormat,
+  BarcodeScanner,
   type DetectedBarcode,
 } from "react-barcode-scanner";
 import "react-barcode-scanner/polyfill";
-import { FaTrash } from "react-icons/fa";
-import { isLoggedIn } from "@/lib/api/auth";
 import {
-  getMealsForLastDays,
-  createMealRecord,
-  deleteMealRecord,
-} from "@/lib/api/meal";
-import { getFoodByBarcode, type Food } from "@/lib/api/food";
-import MenuBar from "@/components/MenuBar";
-import BottomMenuBar from "@/components/BottomMenuBar";
-import Modal from "@/components/Modal";
+  FaAlignLeft,
+  FaBarcode,
+  FaCalendarAlt,
+  FaCamera,
+  FaFire,
+  FaPlus,
+  FaTag,
+  FaTrash,
+  FaUtensils,
+} from "react-icons/fa";
 
 dayjs.locale("th");
 
@@ -68,12 +80,16 @@ export default function MealsPage() {
   const [scanInput, setScanInput] = useState("");
   const [scanError, setScanError] = useState("");
   const [cameraError, setCameraError] = useState("");
+  const [imageAnalyzeError, setImageAnalyzeError] = useState("");
+  const [imageAnalyzing, setImageAnalyzing] = useState(false);
+  const [mealSaving, setMealSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{
     id: string;
     name?: string;
   } | null>(null);
   const scanAppliedRef = useRef(false);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchMeals = async () => {
     try {
@@ -125,6 +141,7 @@ export default function MealsPage() {
     }
   }, [isScanModalOpen]);
 
+
   // ✅ ฟังก์ชันเพิ่มมื้ออาหาร
   const handleAddMeal = async () => {
     const {
@@ -138,9 +155,10 @@ export default function MealsPage() {
       carbs,
     } = mealForm;
     if (!date || !meal_type || !food_name || !calories)
-      return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return message.warning("กรุณากรอกข้อมูลให้ครบถ้วน");
 
     try {
+      setMealSaving(true);
       await createMealRecord({
         date,
         meal_type,
@@ -166,7 +184,9 @@ export default function MealsPage() {
       await fetchMeals();
     } catch (err) {
       console.error(err);
-      alert("บันทึกไม่สำเร็จ");
+      message.error("บันทึกไม่สำเร็จ");
+    } finally {
+      setMealSaving(false);
     }
   };
 
@@ -188,6 +208,43 @@ export default function MealsPage() {
     setIsModalOpen(true);
     setScanInput("");
     setScanError("");
+  };
+
+  const applyAnalyzedFoodToForm = (food: Partial<Food>) => {
+    setMealForm((prev) => ({
+      ...prev,
+      meal_type: prev.meal_type || "snack",
+      food_name: food.food_name || prev.food_name || "",
+      description: food.description || prev.description || "ประเมินจากรูปภาพ",
+      calories: (food.calories ?? prev.calories ?? "").toString(),
+      protein: (food.protein ?? prev.protein ?? "").toString(),
+      fat: (food.fat ?? prev.fat ?? "").toString(),
+      carbs: (food.carbs ?? prev.carbs ?? "").toString(),
+    }));
+    setIsModalOpen(true);
+    setImageAnalyzeError("");
+  };
+
+  const handleFoodImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImageAnalyzing(true);
+      setImageAnalyzeError("");
+      const food = await analyzeFoodImage(file);
+      if (!food) {
+        setImageAnalyzeError("ไม่พบข้อมูลจากรูปภาพนี้");
+        return;
+      }
+      applyAnalyzedFoodToForm(food);
+    } catch (err) {
+      console.error("Failed to analyze food image:", err);
+      setImageAnalyzeError("วิเคราะห์รูปอาหารไม่สำเร็จ");
+    } finally {
+      setImageAnalyzing(false);
+      e.target.value = "";
+    }
   };
 
   const handleScanResult = async (code?: string) => {
@@ -223,9 +280,10 @@ export default function MealsPage() {
     }
   };
 
+
   const handleDeleteMeal = async (mealId?: string) => {
     if (!mealId) {
-      alert("ไม่พบรหัสรายการอาหาร");
+      message.error("ไม่พบรหัสรายการอาหาร");
       return;
     }
     setConfirmDelete(null);
@@ -235,44 +293,96 @@ export default function MealsPage() {
       await fetchMeals();
     } catch (err) {
       console.error("ลบรายการอาหารไม่สำเร็จ", err);
-      alert("ลบรายการไม่สำเร็จ");
+      message.error("ลบรายการไม่สำเร็จ");
     } finally {
       setDeletingId(null);
     }
   };
 
-  if (loading) return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
+  if (loading) return <PageLoader label="กำลังโหลดข้อมูล..." />;
 
   return (
-   <>
-      <div className="w-full flex justify-center gap-2 mb-2">
+    <div className="w-full max-w-7xl mx-auto space-y-4">
+      <div className="mx-auto grid w-full max-w-md grid-cols-3 gap-3 rounded-2xl bg-white p-2 shadow-sm">
         <button
-          className="flex-1 bg-white border border-accent text-accent px-4 py-2 rounded-lg shadow hover:bg-accent hover:text-white transition"
+          type="button"
+          className="flex h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0px] text-accent transition hover:bg-accent hover:text-white"
           onClick={() => setIsScanModalOpen(true)}
+          aria-label="สแกนบาร์โค้ด"
         >
+          <FaBarcode className="h-5 w-5" />
+          <span className="text-xs">Barcode</span>
           สแกนบาร์โค้ด
         </button>
         <button
-          className="flex-1 bg-white text-accent px-6 py-2 rounded-lg shadow hover:bg-accent transition"
-          onClick={() => setIsModalOpen(true)}
+          type="button"
+          className="flex h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0px] text-accent transition hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={() => imageInputRef.current?.click()}
+          disabled={imageAnalyzing}
+          aria-label="วิเคราะห์จากรูป"
         >
+          <FaCamera className="h-5 w-5" />
+          <span className="text-xs">{imageAnalyzing ? "Analyzing" : "AI"}</span>
+          {imageAnalyzing ? "กำลังวิเคราะห์..." : "วิเคราะห์จากรูป"}
+        </button>
+        <button
+          type="button"
+          className="flex h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0px] text-accent transition hover:bg-accent hover:text-white"
+          onClick={() => setIsModalOpen(true)}
+          aria-label="เพิ่มมื้ออาหาร"
+        >
+          <FaPlus className="h-5 w-5" />
+          <span className="text-xs">Add meal</span>
           + เพิ่มมื้ออาหาร
         </button>
       </div>
 
       {/* 🔹 แสดงรายการย้อนหลัง */}
-      <div className="flex flex-col justify-center w-full">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFoodImageChange}
+      />
+      {imageAnalyzeError ? (
+        <p className="text-center text-sm text-red-500">{imageAnalyzeError}</p>
+      ) : null}
+      {imageAnalyzing ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 px-6 backdrop-blur-sm">
+          <div className="flex w-full max-w-xs flex-col items-center rounded-2xl bg-white p-6 text-center shadow-xl">
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
+            <p className="font-semibold text-gray-900">AI กำลังวิเคราะห์อาหาร</p>
+            <p className="mt-1 text-sm text-gray-500">
+              รอสักครู่ ระบบกำลังประเมินสารอาหารจากรูป
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="w-full">
         <h1 className="text-xl font-semibold text-center mb-4">
           บันทึกอาหารย้อนหลัง 7 วัน
         </h1>
 
+        <motion.div
+          className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 items-start"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
         {data.map((day) => {
           const grouped = day.meals.reduce<Record<string, Meal[]>>((acc, m) => {
             (acc[m.meal_type] ||= []).push(m);
             return acc;
           }, {});
           return (
-            <div key={day.date} className="flex flex-col max-w-200 border-b border-gray-200 p-4 mb-4 bg-white rounded-2xl shadow-md">
+            <motion.div
+              key={day.date}
+              variants={staggerItem}
+              className="flex flex-col border-b border-gray-200 p-4 bg-white rounded-2xl shadow-md"
+            >
               <h2 className="font-medium text-accent text-lg mb-2">📅 {dayjs(day.date).format("DD MMM YYYY")}</h2>
 
               {["breakfast", "lunch", "dinner", "snack"].map((type) =>
@@ -288,9 +398,9 @@ export default function MealsPage() {
                       {grouped[type].map((meal, i) => (
                         <li
                           key={meal._id || meal.id || i}
-                          className="flex gap-3 sm:grid sm:grid-cols-[1fr_auto] justify-between sm:items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50"
+                          className="grid grid-cols-[1fr_auto] gap-3 items-center border border-gray-200 rounded-lg px-3 py-2 bg-gray-50"
                         >
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-2">
                             <div className="flex-1 min-w-0">
                               <span className="font-medium">{meal.food_name}</span>
                               {meal.description && <p className="text-xs text-gray-500 mt-1">{meal.description}</p>}
@@ -325,9 +435,10 @@ export default function MealsPage() {
                 ) : null
               )}
               {/* รวมวันนี้เหมือนเดิม */}
-            </div>
+            </motion.div>
           );
         })}
+        </motion.div>
       </div>
 
       {/* ✅ Modal เพิ่มมื้ออาหาร */}
@@ -337,6 +448,10 @@ export default function MealsPage() {
         title="เพิ่มมื้ออาหาร"
       >
         <div className="space-y-3">
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <FaCalendarAlt className="text-accent" />
+            Date
+          </label>
           <input
             type="date"
             value={mealForm.date}
@@ -344,6 +459,10 @@ export default function MealsPage() {
             className="w-full border rounded-md px-3 py-2"
           />
 
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <FaUtensils className="text-accent" />
+            Meal type
+          </label>
           <select
             value={mealForm.meal_type}
             onChange={(e) =>
@@ -358,6 +477,10 @@ export default function MealsPage() {
             <option value="snack">ของว่าง</option>
           </select>
 
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <FaTag className="text-accent" />
+            Food name
+          </label>
           <input
             type="text"
             placeholder="ชื่ออาหาร"
@@ -369,6 +492,10 @@ export default function MealsPage() {
           />
 
           {/* ✅ ช่องรายละเอียด */}
+          <label className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <FaAlignLeft className="text-accent" />
+            Detail
+          </label>
           <textarea
             placeholder="รายละเอียด (เช่น ส่วนผสม หรือปริมาณ)"
             value={mealForm.description}
@@ -379,6 +506,10 @@ export default function MealsPage() {
             className="w-full border rounded-md px-3 py-2 resize-none"
           ></textarea>
 
+          <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+            <FaFire className="text-accent" />
+            Nutrition
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
@@ -420,9 +551,13 @@ export default function MealsPage() {
 
           <button
             onClick={handleAddMeal}
-            className="w-full bg-[#d6a27a] text-white py-2 rounded-md hover:bg-[#c9966f]"
+            disabled={mealSaving}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#d6a27a] py-2 text-white hover:bg-[#c9966f] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            บันทึก
+            {mealSaving ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : null}
+            {mealSaving ? "กำลังบันทึก..." : "บันทึก"}
           </button>
         </div>
       </Modal>
@@ -495,6 +630,7 @@ export default function MealsPage() {
         </div>
       </Modal>
 
+
       {/* ✅ Modal ยืนยันการลบ */}
       <Modal
         isOpen={!!confirmDelete}
@@ -527,6 +663,6 @@ export default function MealsPage() {
           </div>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }

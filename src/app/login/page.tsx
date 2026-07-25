@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { isLoggedIn, login } from "@/lib/api/auth";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { isLoggedIn, login, loginWithGoogle } from "@/lib/api/auth";
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -10,14 +11,40 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await login(email, password);
-    if (ok) {
-      router.push("/dashboard");
-    } else {
-      setError("Invalid email or password");
+    if (submitting) return;
+
+    try {
+      setSubmitting(true);
+      setError("");
+      const ok = await login(email, password);
+      if (ok) {
+        router.push("/dashboard");
+      } else {
+        setError("Invalid email or password");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse: CredentialResponse) => {
+    if (submitting || !credentialResponse.credential) return;
+
+    try {
+      setSubmitting(true);
+      setError("");
+      const ok = await loginWithGoogle(credentialResponse.credential);
+      if (ok) {
+        router.push("/dashboard");
+      } else {
+        setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ");
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -52,6 +79,7 @@ export default function LoginPage() {
           className="border border-accent focus:border-accent-hover focus:ring-1 focus:ring-accent-hover rounded-md w-full px-3 py-2 mb-3 outline-none"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={submitting}
         />
 
         <input
@@ -60,15 +88,40 @@ export default function LoginPage() {
           className="border border-accent focus:border-accent-hover focus:ring-1 focus:ring-accent-hover rounded-md w-full px-3 py-2 mb-5 outline-none"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          disabled={submitting}
         />
 
         <button
           type="submit"
-          className="w-full bg-accent hover:bg-accent-hover text-white py-2 rounded-md"
+          disabled={submitting}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-accent py-2 text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Sign in
+          {submitting ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          ) : null}
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
+
+        <div className="flex items-center gap-3 w-full my-4">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">หรือ</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <GoogleLogin
+          onSuccess={handleGoogleLogin}
+          onError={() => setError("เข้าสู่ระบบด้วย Google ไม่สำเร็จ")}
+          width="304"
+        />
       </form>
+      {submitting ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
+          <div className="rounded-2xl bg-white px-6 py-5 text-center shadow-xl">
+            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
+            <p className="text-sm font-medium text-gray-700">กำลังเข้าสู่ระบบ...</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
 import { FaHome, FaDumbbell, FaUsers } from "react-icons/fa";
 import { IoFastFoodOutline } from "react-icons/io5";
@@ -13,13 +14,13 @@ export default function BottomMenuBar() {
     { label: "อาหาร", icon: <IoFastFoodOutline />, path: "/meals" },
     { label: "กลุ่ม", icon: <FaUsers />, path: "/group" },
     { label: "หน้าหลัก", icon: <FaHome />, path: "/dashboard",isMain:true},
-    { label: "ออกกำลังกาย", icon: <FaDumbbell />, path: "/exercise" },
+    { label: "ออกกำลังกาย", icon: <FaDumbbell />, path: "/exercise-log" },
     { label: "เพิ่มเติม", icon: <BsThreeDotsVertical />, path: "/profile" },
   ];
 
   return (
     <div className="fixed bottom-0 left-0 w-full flex justify-center bg-white shadow-[0_-1px_10px_rgba(0,0,0,0.05)] z-50">
-      <div className="flex flex-1 justify-around items-center h-16 relative mx-4 my-2 max-w-full md:max-w-2/4">
+      <div className="flex flex-1 justify-around items-center h-14 relative mx-4 my-2 max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
         {menuItems.map((item) => {
           const isActive = pathname === item.path;
 
@@ -50,21 +51,26 @@ export default function BottomMenuBar() {
               className="flex flex-col flex-1 items-center justify-center text-sm transition"
             >
               <div
-                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
-                  isActive
-                    ? "bg-accent-hover/10 text-accent-hover"
-                    : "text-accent hover:text-accent-hover"
+                className={`relative w-16 h-16 flex items-center justify-center rounded-full transition-colors ${
+                  isActive ? "text-accent-hover" : "text-accent hover:text-accent-hover"
                 }`}
               >
-                <div className="text-lg">{item.icon}</div>
+                {isActive ? (
+                  <motion.span
+                    layoutId="bottom-nav-active"
+                    className="absolute inset-0 rounded-full bg-accent-hover/10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                ) : null}
+                <motion.div
+                  className="relative text-2xl"
+                  animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                >
+                  {item.icon}
+                </motion.div>
               </div>
-              <span
-                className={`text-xs mt-1 ${
-                  isActive ? "text-accent-hover" : "text-accent"
-                }`}
-              >
-                {item.label}
-              </span>
+              <span className="sr-only">{item.label}</span>
             </button>
           );
         })}

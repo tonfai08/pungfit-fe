@@ -2,18 +2,37 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import Image from "next/image";
 import { isLoggedIn } from "@/lib/api/auth";
 import Modal from "@/components/Modal";
+import PageLoader from "@/components/PageLoader";
 import { type DayKey, type WorkoutExercise } from "@/lib/api/workout";
 import { fetchWorkoutPlan } from "@/lib/features/workoutPlanSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { staggerContainer, staggerItem } from "@/lib/motion";
 
 const FALLBACK_IMAGE = "/images/exercise-placeholder.svg";
 
 function getExerciseImage(item: WorkoutExercise) {
-  console.log('image_url', item.exerciseId?.media?.image_url);
   return item.exerciseId?.media?.image_url || FALLBACK_IMAGE;
+}
 
+function ExerciseThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(src);
+
+  useEffect(() => setImgSrc(src), [src]);
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      sizes="(max-width: 768px) 40vw, 200px"
+      className="rounded-md object-cover bg-gray-100"
+      onError={() => setImgSrc(FALLBACK_IMAGE)}
+    />
+  );
 }
 
 const DAY_LABELS: { key: DayKey; label: string }[] = [
@@ -73,10 +92,10 @@ export default function ExercisePage() {
     dispatch(fetchWorkoutPlan());
   }, [router, dispatch]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) return <PageLoader />;
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 w-full max-w-full md:max-w-2/4">
+    <div className="bg-white rounded-xl shadow p-6 w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-accent">ออกกำลังกาย</h1>
@@ -102,11 +121,20 @@ export default function ExercisePage() {
       {!plan ? (
         <p className="text-gray-600">ยังไม่มีโปรแกรมการออกกำลังกาย</p>
       ) : (
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
           {DAY_LABELS.map((day) => {
             const items = plan.days?.[day.key] ?? [];
             return (
-              <div key={day.key} className="border rounded-lg p-4">
+              <motion.div
+                key={day.key}
+                variants={staggerItem}
+                className="border rounded-lg p-4"
+              >
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold">{day.label}</h2>
                   <span className="text-xs text-gray-500">
@@ -131,7 +159,7 @@ export default function ExercisePage() {
                       >
                         <button
                           type="button"
-                          className={`relative w-1/2 ${canPlay ? "cursor-pointer" : "cursor-default"}`}
+                          className={`relative w-1/2 h-24 ${canPlay ? "cursor-pointer" : "cursor-default"}`}
                           onClick={() => {
                             if (embedUrl) setVideoUrl(embedUrl);
                           }}
@@ -139,13 +167,9 @@ export default function ExercisePage() {
                             canPlay ? "ดูวิดีโอท่าออกกำลังกาย" : "ไม่มีวิดีโอ"
                           }
                         >
-                          <img
+                          <ExerciseThumbnail
                             src={getExerciseImage(item)}
                             alt={item.exerciseId?.name || "exercise"}
-                            className="w-full h-24 rounded-md object-cover bg-gray-100"
-                            onError={(e) => {
-                              e.currentTarget.src = FALLBACK_IMAGE;
-                            }}
                           />
                           {canPlay ? (
                             <span className="absolute inset-0 flex items-center justify-center text-white text-xs">
@@ -157,9 +181,9 @@ export default function ExercisePage() {
                           <p className="font-medium">
                             {item.exerciseId?.name ?? "ไม่พบชื่อท่า"}
                           </p>
-                          {item.exerciseId?.aliases?.length ? (
+                          {item.exerciseId?.execution_notes ? (
                             <p className="text-xs text-gray-500">
-                              {item.exerciseId.aliases[0]}
+                              {item.exerciseId.execution_notes}
                             </p>
                           ) : null}
                           <p className="text-sm text-gray-600 mt-1">
@@ -172,10 +196,10 @@ export default function ExercisePage() {
                     ))}
                   </ul>
                 )}
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {plan?.note ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { message } from "antd";
 import { isLoggedIn, logout } from "@/lib/api/auth";
 import { useAppSelector } from "@/lib/hooks";
 import { getWeightHistory, updateWeightToday } from "@/lib/api/weight";
@@ -11,6 +12,7 @@ import ProfileStatCard from "@/components/ProfileStatCard";
 import DailyNutritionProgress from "@/components/DailyNutritionProgress";
 import WeightChart, { type WeightRecordPoint } from "@/components/WeightChart";
 import Modal from "@/components/Modal";
+import PageLoader from "@/components/PageLoader";
 
 interface Profile {
   weight?: number | string;
@@ -56,7 +58,7 @@ export default function DashboardPage() {
   };
 
   const handleAddWeight = async () => {
-    if (!newWeight) return alert("กรุณากรอกน้ำหนักก่อน");
+    if (!newWeight) return message.warning("กรุณากรอกน้ำหนักก่อน");
     try {
       await updateWeightToday(Number(newWeight));
       setIsWeightModalOpen(false);
@@ -64,7 +66,7 @@ export default function DashboardPage() {
       await fetchWeight();
     } catch (err) {
       console.error("Failed to update weight:", err);
-      alert("บันทึกไม่สำเร็จ");
+      message.error("บันทึกไม่สำเร็จ");
     }
   };
 
@@ -84,7 +86,7 @@ export default function DashboardPage() {
     router.push("/login");
   }, [error, router]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) return <PageLoader />;
   const profile: Profile | null = userProfile
     ? {
         weight: userProfile.weight_kg ?? "",
@@ -126,11 +128,11 @@ export default function DashboardPage() {
         bmr={profile.bmr}
       />
 
-      <div className='bg-white w-full max-w-full md:max-w-2/4 mt-4 p-4 rounded-lg flex flex-col p-4 items-center'>
+      <div className='bg-white w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mt-4 p-4 rounded-lg flex flex-col p-4 items-center'>
         <div className="mb-4 w-full"> <BmiBar weight={Number(weight)} height={Number(height)} /></div>
       </div>
 
-      <div className="bg-white w-full max-w-full md:max-w-2/4 mt-4 p-4 rounded-lg flex flex-col items-center gap-3">
+      <div className="bg-white w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mt-4 p-4 rounded-lg flex flex-col items-center gap-3">
         <div className="flex w-full justify-between items-center gap-2">
           <h2 className="text-lg font-semibold">กราฟน้ำหนัก</h2>
           <button

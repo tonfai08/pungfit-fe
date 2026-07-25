@@ -9,6 +9,36 @@ interface ProfileData {
   age?: number | string;
   activity_level?: string;
 }
+function persistSession(data: { token?: string; user?: Record<string, unknown> }) {
+  if (!data?.token || !data.user) return false;
+
+  const user = data.user;
+  localStorage.setItem("token", data.token);
+  localStorage.setItem(
+    "userProfile",
+    JSON.stringify({
+      email: user.email || "",
+      last_login: user.last_login || "",
+      profile_image: user.profile_image || "",
+      display_name: user.display_name || "",
+    })
+  );
+  localStorage.setItem(
+    "userBody",
+    JSON.stringify({
+      weight: user.weight_kg || "",
+      height: user.height_cm || "",
+      bodyFat: user.body_fat_percent || "",
+      gender: user.gender || "",
+      age: user.age || "",
+      bmr: user.bmr || "",
+      activity_level: user.activity_level || "",
+      tdee: user.tdee || null,
+    })
+  );
+  return true;
+}
+
 // 🔹 LOGIN
 export async function login(email: string, password: string) {
   try {
@@ -23,33 +53,30 @@ export async function login(email: string, password: string) {
     if (!res.ok) return false;
 
     const data = await res.json();
-
-    if (data?.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userProfile", JSON.stringify({
-        email: data.email || "",
-        last_login: data.last_login || "",
-        profile_image: data.profile_image || "",
-      }));
-      localStorage.setItem(
-        "userBody",
-        JSON.stringify({
-          weight: data.weight_kg || "",
-          height: data.height_cm || "",
-          bodyFat: data.body_fat_percent || "",
-          gender: data.gender || "",
-          age: data.age || "",
-          bmr: data.bmr || "",
-          activity_level: data.activity_level || "",
-          tdee: data.tdee || null,
-        })
-      );
-      return true;
-    }
-
-    return false;
+    return persistSession(data);
   } catch (error) {
     console.error("🚨 Login error:", error);
+    return false;
+  }
+}
+
+// 🔹 LOGIN WITH GOOGLE
+export async function loginWithGoogle(idToken: string) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id_token: idToken }),
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    return persistSession(data);
+  } catch (error) {
+    console.error("🚨 Google login error:", error);
     return false;
   }
 }

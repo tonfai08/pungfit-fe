@@ -41,7 +41,7 @@ export default function ProfileStatCard({
   // const TDEE = Math.round(bmr * 1.55);
 
   return (
-    <div className="grid grid-cols-2 gap-3 w-full max-w-full md:max-w-2/4">
+    <div className="grid grid-cols-2 gap-3 w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
       {/* น้ำหนัก */}
       <div
         onClick={() => router.push("/weight")}

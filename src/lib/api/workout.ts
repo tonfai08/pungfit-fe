@@ -15,6 +15,7 @@ export interface WorkoutExercise {
     _id: string;
     name: string;
     aliases?: string[];
+    execution_notes?: string;
     media?: {
       image_url?: string;
       video_url?: string;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
 
 export default function MenuBar() {
@@ -10,32 +10,51 @@ export default function MenuBar() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    const loadProfileImage = () => {
       const stored = localStorage.getItem("userProfile");
-      if (stored) {
-        try {
-          const user = JSON.parse(stored);
-          if (user?.profile_image) {
-            const baseUrl =
-              process.env.NEXT_PUBLIC_API_BASE_URL ||
-              "https://api.pungfit.life/v1"; // fallback ปลอดภัย
-            setProfileImage(`${baseUrl}${user.profile_image}`);
-           
-            
-          }
-        } catch (err) {
-          console.error("Error parsing userProfile:", err);
-        }
+      if (!stored) {
+        setProfileImage(null);
+        return;
       }
-    }
+
+      try {
+        const user = JSON.parse(stored);
+        if (!user?.profile_image) {
+          setProfileImage(null);
+          return;
+        }
+
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_BASE_URL ||
+          "https://api.pungfit.life/v1";
+        const imageUrl = user.profile_image.startsWith("http")
+          ? user.profile_image
+          : `${baseUrl}${user.profile_image.startsWith("/") ? "" : "/"}${user.profile_image}`;
+        const version = user.profile_image_updated_at;
+
+        setProfileImage(version ? `${imageUrl}?v=${version}` : imageUrl);
+      } catch (err) {
+        console.error("Error parsing userProfile:", err);
+      }
+    };
+
+    loadProfileImage();
+    window.addEventListener("userProfileUpdated", loadProfileImage);
+    window.addEventListener("storage", loadProfileImage);
+
+    return () => {
+      window.removeEventListener("userProfileUpdated", loadProfileImage);
+      window.removeEventListener("storage", loadProfileImage);
+    };
   }, []);
 
   return (
-    <div className="w-full bg-white shadow-sm fixed top-0 left-0 z-50 flex items-center justify-between px-6 py-4">
-      {/* โลโก้ทางซ้าย */}
-      <div
+    <div className="fixed left-0 top-0 z-50 flex w-full items-center justify-between bg-white px-6 py-4 shadow-sm">
+      <button
+        type="button"
         onClick={() => router.push("/dashboard")}
-        className="flex items-center cursor-pointer hover:opacity-80 transition"
+        className="flex items-center transition hover:opacity-80"
+        aria-label="หน้าหลัก"
       >
         <Image
           src="/logo.png"
@@ -44,12 +63,13 @@ export default function MenuBar() {
           height={100}
           priority
         />
-      </div>
+      </button>
 
-      {/* โปรไฟล์ทางขวา */}
       <button
+        type="button"
         onClick={() => router.push("/profile")}
-        className="relative w-9 h-9 flex items-center justify-center rounded-full bg-[#f5f5f5] hover:bg-[#eaeaea] overflow-hidden transition"
+        className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#f5f5f5] transition hover:bg-[#eaeaea]"
+        aria-label="โปรไฟล์"
       >
         {profileImage ? (
           <Image
@@ -58,11 +78,10 @@ export default function MenuBar() {
             fill
             sizes="36px"
             className="object-cover"
-            onError={() => setProfileImage(null)} // fallback ถ้าโหลด error
+            onError={() => setProfileImage(null)}
           />
         ) : (
-          
-          <FaUserCircle className="text-[#d6a27a] text-3xl" />
+          <FaUserCircle className="text-3xl text-[#d6a27a]" />
         )}
       </button>
     </div>

@@ -25,7 +25,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                 <>
                     {/* Overlay */}
                     <motion.div
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-52"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -34,14 +34,14 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
 
                     {/* Modal Box */}
                     <motion.div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 z-53 flex items-center justify-center p-4"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                     >
                         <div
-                            className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative"
+                            className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 relative max-h-[85vh] flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* ปุ่มปิด */}
@@ -60,7 +60,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                             )}
 
                             {/* เนื้อหา */}
-                            <div>{children}</div>
+                            <div className="overflow-y-auto min-h-0">{children}</div>
                         </div>
                     </motion.div>
                 </>

@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-import { getGroupDetail } from "@/lib/api/group";
+import { motion } from "framer-motion";
 import { getUserProfile, isLoggedIn } from "@/lib/api/auth";
-import MenuBar from "@/components/MenuBar";
-import BottomMenuBar from "@/components/BottomMenuBar";
+import { getGroupDetail } from "@/lib/api/group";
+import PageLoader from "@/components/PageLoader";
+import { staggerContainer, staggerItem } from "@/lib/motion";
+import { differenceInDays, differenceInHours, differenceInMinutes } from "date-fns";
+import Image from "next/image";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
-import { differenceInMinutes, differenceInHours, differenceInDays } from "date-fns";
 
 interface Member {
   id: string;
@@ -48,7 +49,7 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const user = await getUserProfile();
       setCurrentUserId(user.id);
@@ -70,7 +71,7 @@ export default function GroupDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -78,9 +79,9 @@ export default function GroupDetailPage() {
       return;
     }
     fetchData();
-  }, [id, router]);
+  }, [fetchData, router]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) return <PageLoader />;
 
   if (!group)
     return <p className="text-center mt-10 text-red-500">ไม่พบข้อมูลกลุ่ม</p>;
@@ -91,7 +92,7 @@ export default function GroupDetailPage() {
   return (
     <>
 
-      <div className="max-w-md mx-auto p-4">
+      <div className="w-full max-w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto p-4">
         <h1 className="text-xl font-semibold text-center text-accent mb-2">
           {group.name}
         </h1>
@@ -99,7 +100,12 @@ export default function GroupDetailPage() {
           รหัสเข้าร่วม: {group.join_code}
         </p>
 
-        <div className="grid grid-cols-2 gap-3 w-full max-w-full md:max-w-2/4">
+        <motion.div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 w-full"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
           {group.members.length === 0 ? (
             <p className="text-gray-500 text-sm">ยังไม่มีสมาชิก</p>
           ) : (
@@ -109,8 +115,9 @@ export default function GroupDetailPage() {
                 : null;
 
               return (
-                <div
+                <motion.div
                   key={m.id}
+                  variants={staggerItem}
                   className={`bg-white w-full p-4 rounded-lg flex flex-col gap-2 items-center justify-center shadow hover:shadow-md hover:cursor-pointer transition ${m.id === currentUserId
                       ? "border-2 border-[#d6a27a]"
                       : "border border-gray-100"
@@ -142,11 +149,11 @@ export default function GroupDetailPage() {
                       ออนไลน์ล่าสุด {getTimeAgo(m.last_login)}
                     </span>
                   )}
-                </div>
+                </motion.div>
               );
             })
           )}
-        </div>
+        </motion.div>
       </div>
     </>
   );

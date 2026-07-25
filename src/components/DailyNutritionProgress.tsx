@@ -53,7 +53,7 @@ export default function DailyNutritionProgress() {
     };
 
     return (
-        <div className="bg-white w-full md:max-w-2/4 rounded-xl flex flex-col align-items-center; justify-center p-4 mb-2">
+        <div className="bg-white w-full w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl rounded-xl flex flex-col align-items-center; justify-center p-4 mb-2">
             <h1 className="text-xl mb-4">สารอารหารวันนี้</h1>
         <div className="w-full grid grid-cols-2 gap-4">
             {/* 🔵 วงกลมฝั่งซ้าย (พลังงานรวม) */}

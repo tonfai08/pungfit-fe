@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isLoggedIn, logout } from "@/lib/api/auth";
 import { fetchUserProfile } from "@/lib/features/userProfileSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getWeightHistory, updateWeightToday } from "@/lib/api/weight";
 import CompleteProfileForm from "@/components/CompleteProfileForm";
-import BmiBar from "@/components/BmiBar";
-import ProfileStatCard from "@/components/ProfileStatCard";
 import MenuBar from "@/components/MenuBar";
 import BottomMenuBar from "@/components/BottomMenuBar";
-import DailyNutritionProgress from "@/components/DailyNutritionProgress";
-import WeightChart, { type WeightRecordPoint } from "@/components/WeightChart";
-import Modal from "@/components/Modal";
+import PageLoader from "@/components/PageLoader";
+import PageTransition from "@/components/PageTransition";
 
 interface Profile {
   weight?: number | string;
@@ -38,42 +34,6 @@ export default function AppLayout({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { data: userProfile, loading, error } = useAppSelector((state) => state.userProfile);
-  const [weightData, setWeightData] = useState<WeightRecordPoint[]>([]);
-  const [weightLoading, setWeightLoading] = useState(true);
-  const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
-  const [newWeight, setNewWeight] = useState("");
-
-  const fetchWeight = async () => {
-    setWeightLoading(true);
-    try {
-      const records = await getWeightHistory(10);
-      const formatted = records.map((r: WeightRecordPoint) => ({
-        ...r,
-        date: new Date(r.date).toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "short",
-        }),
-      }));
-      setWeightData(formatted);
-    } catch (err) {
-      console.error("Failed to fetch weight history:", err);
-    } finally {
-      setWeightLoading(false);
-    }
-  };
-
-  const handleAddWeight = async () => {
-    if (!newWeight) return alert("กรุณากรอกน้ำหนักก่อน");
-    try {
-      await updateWeightToday(Number(newWeight));
-      setIsWeightModalOpen(false);
-      setNewWeight("");
-      await fetchWeight();
-    } catch (err) {
-      console.error("Failed to update weight:", err);
-      alert("บันทึกไม่สำเร็จ");
-    }
-  };
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -82,7 +42,6 @@ export default function AppLayout({
     }
 
     dispatch(fetchUserProfile());
-    fetchWeight();
   }, [router, dispatch]);
 
   useEffect(() => {
@@ -92,7 +51,12 @@ export default function AppLayout({
     router.push("/login");
   }, [error, router]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading)
+    return (
+      <div className="font-roboto min-h-screen h-full bg-bg-theme flex flex-col items-center justify-center">
+        <PageLoader label="กำลังเตรียมข้อมูลของคุณ..." />
+      </div>
+    );
   const profile: Profile | null = userProfile
     ? {
         weight: userProfile.weight_kg ?? "",
@@ -125,11 +89,8 @@ export default function AppLayout({
   return (
     <div className="font-roboto min-h-screen h-full bg-bg-theme flex flex-col py-22 p-4 items-center gap-2">
       <MenuBar />
-      <>{children}</>
+      <PageTransition>{children}</PageTransition>
       <BottomMenuBar />
     </div>
   );
 }
-
-
-

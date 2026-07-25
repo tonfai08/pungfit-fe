@@ -66,7 +66,7 @@ export default function CompleteProfileForm({
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full md:max-w-1/2 text-text-primary flex items-center justify-center">
+    <div className="min-h-screen w-full max-w-full md:max-w-2xl lg:max-w-3xl text-text-primary flex items-center justify-center">
       <form
         onSubmit={handleSubmit}
         className="p-8 bg-white rounded-2xl shadow-md w-full max-w-sm"

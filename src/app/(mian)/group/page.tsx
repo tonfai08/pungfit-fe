@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getMyGroups } from "@/lib/api/group";
+import { motion } from "framer-motion";
 import { isLoggedIn } from "@/lib/api/auth";
-import MenuBar from "@/components/MenuBar";
-import BottomMenuBar from "@/components/BottomMenuBar";
+import { getMyGroups } from "@/lib/api/group";
+import PageLoader from "@/components/PageLoader";
+import { staggerContainer, staggerItem } from "@/lib/motion";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Group {
   _id: string;
@@ -41,12 +42,12 @@ export default function GroupPage() {
     fetchGroups();
   }, [router]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (loading) return <PageLoader />;
 
   return (
     <>
 
-      <div className="max-w-md mx-auto p-4">
+      <div className="w-full max-w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto p-4">
         <h1 className="text-xl font-semibold mb-4 text-center text-accent">
           กลุ่มของฉัน
         </h1>
@@ -54,10 +55,17 @@ export default function GroupPage() {
         {groups.length === 0 ? (
           <p className="text-center text-gray-500 mt-8">ยังไม่มีกลุ่ม</p>
         ) : (
-          <div className="space-y-3">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {groups.map((group) => (
-              <div
+              <motion.div
                 key={group._id}
+                variants={staggerItem}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => router.push(`/group/${group._id}`)} // ✅ ไปหน้า detail
                 className="bg-white rounded-xl p-4 shadow hover:shadow-md cursor-pointer transition border border-gray-100 hover:border-accent-hover"
               >
@@ -73,9 +81,9 @@ export default function GroupPage() {
                 <p className="text-xs text-gray-400">
                   รหัสเข้าร่วม: {group.join_code}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </>

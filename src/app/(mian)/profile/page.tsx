@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { FaUserCircle } from "react-icons/fa";
-import MenuBar from "@/components/MenuBar";
-import BottomMenuBar from "@/components/BottomMenuBar";
+import { message } from "antd";
 import Modal from "@/components/Modal";
+import PageLoader from "@/components/PageLoader";
 import {
   isLoggedIn,
-  updateUser,
   updateDisplayName,
   updateProfileImage,
+  updateUser,
 } from "@/lib/api/auth";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FaUserCircle } from "react-icons/fa";
 
 interface UserProfile {
   email: string;
@@ -39,6 +39,9 @@ export default function ProfilePage() {
   const [isEditNameOpen, setIsEditNameOpen] = useState(false);
   const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
   const [isEditImageOpen, setIsEditImageOpen] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
 
   const [newName, setNewName] = useState("");
   const [form, setForm] = useState<UserBody>({
@@ -97,6 +100,7 @@ export default function ProfilePage() {
   // ✅ บันทึกชื่อ
   const handleSaveName = async () => {
     try {
+      setSavingName(true);
       await updateDisplayName(newName);
 
       const profileData = localStorage.getItem("userProfile");
@@ -107,35 +111,41 @@ export default function ProfilePage() {
       }
 
       setIsEditNameOpen(false);
-      alert("บันทึกชื่อเรียบร้อย");
+      message.success("บันทึกชื่อเรียบร้อย");
     } catch (err) {
       console.error(err);
-      alert("บันทึกชื่อไม่สำเร็จ");
+      message.error("บันทึกชื่อไม่สำเร็จ");
+    } finally {
+      setSavingName(false);
     }
   };
 
   // ✅ บันทึกข้อมูลทั่วไป
   const handleSaveInfo = async () => {
     try {
+      setSavingInfo(true);
       await updateUser(form);
       localStorage.setItem("userBody", JSON.stringify(form));
       setBody(form);
       setIsEditInfoOpen(false);
-      alert("บันทึกข้อมูลเรียบร้อย");
+      message.success("บันทึกข้อมูลเรียบร้อย");
     } catch (err) {
       console.error(err);
-      alert("บันทึกข้อมูลไม่สำเร็จ");
+      message.error("บันทึกข้อมูลไม่สำเร็จ");
+    } finally {
+      setSavingInfo(false);
     }
   };
 
   // ✅ อัปโหลดและบันทึกรูปโปรไฟล์
   const handleSaveProfileImage = async () => {
     if (!selectedFile) {
-      alert("กรุณาเลือกรูปก่อน");
+      message.warning("กรุณาเลือกรูปก่อน");
       return;
     }
 
     try {
+      setSavingImage(true);
       const res = await updateProfileImage(selectedFile);
       const newImageUrl = res.profile_image;
 
@@ -144,25 +154,33 @@ export default function ProfilePage() {
       const fullUrl = newImageUrl.startsWith("http")
         ? newImageUrl
         : `${baseUrl}${newImageUrl.startsWith("/") ? "" : "/"}${newImageUrl}`;
+      const imageVersion = Date.now();
 
       // ✅ อัปเดต localStorage
       const userProfile = localStorage.getItem("userProfile");
       if (userProfile) {
-        const updated = { ...JSON.parse(userProfile), profile_image: newImageUrl };
+        const updated = {
+          ...JSON.parse(userProfile),
+          profile_image: newImageUrl,
+          profile_image_updated_at: imageVersion,
+        };
         localStorage.setItem("userProfile", JSON.stringify(updated));
         setProfile(updated);
+        window.dispatchEvent(new Event("userProfileUpdated"));
       }
 
       // ✅ รีเฟรช URL รูปใน state
-      setProfileImageUrl(fullUrl);
+      setProfileImageUrl(`${fullUrl}${fullUrl.includes("?") ? "&" : "?"}v=${imageVersion}`);
       setPreviewImage(null);
       setSelectedFile(null);
       setIsEditImageOpen(false);
 
-      alert("อัปเดตรูปโปรไฟล์เรียบร้อย");
+      message.success("อัปเดตรูปโปรไฟล์เรียบร้อย");
     } catch (err) {
       console.error(err);
-      alert("อัปเดตรูปโปรไฟล์ไม่สำเร็จ");
+      message.error("อัปเดตรูปโปรไฟล์ไม่สำเร็จ");
+    } finally {
+      setSavingImage(false);
     }
   };
 
@@ -175,12 +193,11 @@ export default function ProfilePage() {
     }
   };
 
-  if (!profile || !body)
-    return <p className="text-center mt-10">กำลังโหลดข้อมูล...</p>;
+  if (!profile || !body) return <PageLoader label="กำลังโหลดข้อมูล..." />;
 
   return (
     <>
-      <div className="w-full bg-white rounded-lg shadow p-6 text-center">
+      <div className="w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto bg-white rounded-lg shadow p-6 text-center">
         {/* ✅ รูปโปรไฟล์ */}
         <div className="flex flex-col items-center mb-4">
           {profileImageUrl ? (
@@ -259,13 +276,18 @@ export default function ProfilePage() {
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          disabled={savingName}
           className="w-full border rounded-md px-3 py-2 mb-4"
         />
         <button
           onClick={handleSaveName}
-          className="w-full bg-[#d6a27a] text-white py-2 rounded-md hover:bg-[#c9966f]"
+          disabled={savingName}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-[#d6a27a] py-2 text-white hover:bg-[#c9966f] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          บันทึก
+          {savingName ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          ) : null}
+          {savingName ? "กำลังบันทึก..." : "บันทึก"}
         </button>
       </Modal>
 
@@ -353,42 +375,54 @@ export default function ProfilePage() {
         </div>
         <button
           onClick={handleSaveInfo}
-          className="w-full mt-4 bg-[#d6a27a] text-white py-2 rounded-md hover:bg-[#c9966f]"
+          disabled={savingInfo}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-[#d6a27a] py-2 text-white hover:bg-[#c9966f] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          บันทึก
+          {savingInfo ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          ) : null}
+          {savingInfo ? "กำลังบันทึก..." : "บันทึก"}
         </button>
       </Modal>
 
-      {/* ✅ Modal เปลี่ยนรูปโปรไฟล์ */}
+
       <Modal
         isOpen={isEditImageOpen}
         onClose={() => setIsEditImageOpen(false)}
         title="เปลี่ยนรูปโปรไฟล์"
       >
         <div className="flex flex-col items-center space-y-3">
-          {previewImage ? (
-            <Image
-              src={previewImage}
-              alt="Preview"
-              width={120}
-              height={120}
-              className="rounded-full object-cover"
-            />
-          ) : (
-            <FaUserCircle className="text-gray-300 text-[120px]" />
-          )}
-
+          <label htmlFor="profile-image-input" className="cursor-pointer">
+            {previewImage ? (
+              <Image
+                src={previewImage}
+                alt="Preview"
+                width={120}
+                height={120}
+                className="rounded-full object-cover h-[120px] w-[120px] ring-1 ring-transparent transition hover:ring-[#d6a27a]"
+              />
+            ) : (
+              <FaUserCircle className="text-gray-300 text-[120px] transition hover:text-gray-400" />
+            )}
+          </label>
           <input
+            id="profile-image-input"
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="w-full text-sm"
+            disabled={savingImage}
+            className="sr-only"
           />
+          <span className="text-xs text-gray-500">แตะที่รูปเพื่อเลือกไฟล์</span>
           <button
             onClick={handleSaveProfileImage}
-            className="w-full bg-[#d6a27a] text-white py-2 rounded-md hover:bg-[#c9966f]"
+            disabled={savingImage}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#d6a27a] py-2 text-white hover:bg-[#c9966f] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            บันทึก
+            {savingImage ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : null}
+            {savingImage ? "กำลังอัปโหลด..." : "บันทึก"}
           </button>
         </div>
       </Modal>
