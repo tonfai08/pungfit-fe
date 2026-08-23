@@ -181,3 +181,41 @@ export async function updateProfileImage(file: File) {
 
   return res.json();
 }
+
+export async function createMcpAccessKey(): Promise<{ access_key: string }> {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No token");
+
+  const res = await fetch(`${API_BASE_URL}/users/me/mcp-access-key`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to create AI access key");
+  }
+
+  return res.json();
+}
+
+export async function disableMcpAccess() {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No token");
+
+  const res = await fetch(`${API_BASE_URL}/users/me/mcp-access-key`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to disable MCP access");
+  }
+
+  return res.json();
+}

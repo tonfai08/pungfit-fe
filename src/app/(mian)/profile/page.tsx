@@ -4,6 +4,8 @@ import { message } from "antd";
 import Modal from "@/components/Modal";
 import PageLoader from "@/components/PageLoader";
 import {
+  createMcpAccessKey,
+  disableMcpAccess,
   isLoggedIn,
   updateDisplayName,
   updateProfileImage,
@@ -19,6 +21,7 @@ interface UserProfile {
   last_login?: string;
   profile_image?: string;
   display_name?: string;
+  mcp_enabled?: boolean;
 }
 
 interface UserBody {
@@ -39,9 +42,13 @@ export default function ProfilePage() {
   const [isEditNameOpen, setIsEditNameOpen] = useState(false);
   const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
   const [isEditImageOpen, setIsEditImageOpen] = useState(false);
+  const [isMcpAccessOpen, setIsMcpAccessOpen] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [savingInfo, setSavingInfo] = useState(false);
   const [savingImage, setSavingImage] = useState(false);
+  const [creatingMcpKey, setCreatingMcpKey] = useState(false);
+  const [disablingMcp, setDisablingMcp] = useState(false);
+  const [confirmDisableMcp, setConfirmDisableMcp] = useState(false);
 
   const [newName, setNewName] = useState("");
   const [form, setForm] = useState<UserBody>({
@@ -54,6 +61,71 @@ export default function ProfilePage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [mcpAccessKey, setMcpAccessKey] = useState("");
+
+  const updateStoredMcpStatus = (enabled: boolean) => {
+    const stored = localStorage.getItem("userProfile");
+    const updated = {
+      ...(stored ? JSON.parse(stored) : profile || {}),
+      mcp_enabled: enabled,
+    };
+    localStorage.setItem("userProfile", JSON.stringify(updated));
+    setProfile(updated);
+  };
+
+  const resetMcpAccessModal = () => {
+    setIsMcpAccessOpen(false);
+    setMcpAccessKey("");
+    setConfirmDisableMcp(false);
+  };
+
+  const closeMcpAccessModal = () => {
+    if (creatingMcpKey || disablingMcp) return;
+    resetMcpAccessModal();
+  };
+
+  const handleCreateMcpKey = async () => {
+    try {
+      setCreatingMcpKey(true);
+      const result = await createMcpAccessKey();
+      setMcpAccessKey(result.access_key);
+      updateStoredMcpStatus(true);
+      message.success("สร้าง AI Access Key แล้ว กรุณาคัดลอกเก็บไว้ตอนนี้");
+    } catch (error) {
+      console.error(error);
+      message.error(
+        error instanceof Error ? error.message : "สร้าง Access Key ไม่สำเร็จ"
+      );
+    } finally {
+      setCreatingMcpKey(false);
+    }
+  };
+
+  const copyText = async (text: string, successText: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success(successText);
+    } catch {
+      message.error("คัดลอกไม่สำเร็จ กรุณาเลือกข้อความแล้วคัดลอกเอง");
+    }
+  };
+
+  const handleDisableMcp = async () => {
+    try {
+      setDisablingMcp(true);
+      await disableMcpAccess();
+      updateStoredMcpStatus(false);
+      resetMcpAccessModal();
+      message.success("ปิดการเชื่อมต่อ AI และยกเลิก Access Key แล้ว");
+    } catch (error) {
+      console.error(error);
+      message.error(
+        error instanceof Error ? error.message : "ปิดการเชื่อมต่อไม่สำเร็จ"
+      );
+    } finally {
+      setDisablingMcp(false);
+    }
+  };
 
   // ✅ โหลดข้อมูลจาก localStorage
   useEffect(() => {
@@ -264,7 +336,138 @@ export default function ProfilePage() {
         >
           แก้ไขข้อมูลทั่วไป
         </button>
+
+        <div className="mt-8 rounded-2xl border border-accent/25 bg-accent/5 p-4 text-left sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-gray-800">
+                  การเชื่อมต่อ AI
+                </h3>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    profile.mcp_enabled
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-200 text-gray-600"
+                  }`}
+                >
+                  {profile.mcp_enabled ? "เปิดใช้งาน" : "ยังไม่เปิดใช้งาน"}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                สร้าง Access Key เพื่อให้ Codex บันทึกการออกกำลังกายให้คุณ
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsMcpAccessOpen(true)}
+              className="shrink-0 rounded-lg border border-accent bg-white px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent hover:text-white"
+            >
+              {profile.mcp_enabled ? "จัดการการเชื่อมต่อ" : "เชื่อมต่อ Codex"}
+            </button>
+          </div>
+        </div>
       </div>
+
+      <Modal
+        isOpen={isMcpAccessOpen}
+        onClose={closeMcpAccessModal}
+        title="เชื่อมต่อ Codex กับ PungFit"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800">
+            สร้างรหัสแล้วนำไปตั้งค่าใน Codex เพียงครั้งเดียว หลังจากนั้นคุณสั่งให้ AI
+            บันทึกการออกกำลังกายได้ทันที
+          </div>
+
+          {mcpAccessKey ? (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-3">
+                <p className="font-medium text-green-800">สร้าง Access Key สำเร็จ</p>
+                <p className="mt-1 text-xs text-green-700">
+                  รหัสนี้จะแสดงเพียงครั้งเดียว ห้ามส่งในแชตหรือให้บุคคลอื่น
+                </p>
+              </div>
+              <div className="break-all rounded-lg border bg-gray-50 p-3 font-mono text-xs text-gray-700">
+                {mcpAccessKey}
+              </div>
+              <button
+                type="button"
+                onClick={() => copyText(mcpAccessKey, "คัดลอก Access Key แล้ว")}
+                className="w-full rounded-lg bg-accent py-2.5 font-medium text-white hover:bg-accent-hover"
+              >
+                คัดลอก Access Key
+              </button>
+              <div className="rounded-xl border border-gray-200 p-3 text-sm text-gray-600">
+                <p className="font-medium text-gray-800">ขั้นตอนต่อไป</p>
+                <ol className="mt-2 list-decimal space-y-1 pl-5">
+                  <li>เปิด Codex → Settings → MCP servers</li>
+                  <li>เพิ่ม Streamable HTTP server</li>
+                  <li>URL: <code>https://api.pungfit.life/mcp</code></li>
+                  <li>ใช้ Access Key นี้เป็น Bearer token แล้วเปิด Codex ใหม่</li>
+                </ol>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleCreateMcpKey}
+              disabled={creatingMcpKey || disablingMcp}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 font-medium text-white transition hover:bg-accent-hover disabled:opacity-60"
+            >
+              {creatingMcpKey ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : null}
+              {creatingMcpKey
+                ? "กำลังสร้าง..."
+                : profile.mcp_enabled
+                  ? "สร้าง Access Key ใหม่"
+                  : "สร้าง AI Access Key"}
+            </button>
+          )}
+
+          {profile.mcp_enabled ? (
+            <div className="border-t border-gray-200 pt-4">
+              {confirmDisableMcp ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                  <p className="text-sm text-red-700">
+                    Access Key จะใช้ไม่ได้ทันที ต้องการปิดต่อหรือไม่?
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDisableMcp(false)}
+                      disabled={disablingMcp}
+                      className="flex-1 rounded-lg border border-gray-300 bg-white py-2 text-sm text-gray-700"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDisableMcp}
+                      disabled={disablingMcp}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm text-white disabled:opacity-60"
+                    >
+                      {disablingMcp ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      ) : null}
+                      ยืนยันปิด
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDisableMcp(true)}
+                  className="w-full py-1 text-sm text-red-600 hover:underline"
+                >
+                  ปิดการเชื่อมต่อ AI
+                </button>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </Modal>
 
       {/* ✅ Modal แก้ไขชื่อ */}
       <Modal

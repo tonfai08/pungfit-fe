@@ -5,6 +5,7 @@ export type UserProfile = {
   display_name?: string;
   last_login?: string;
   profile_image?: string;
+  mcp_enabled?: boolean;
   weight_kg?: number | string;
   height_cm?: number | string;
   body_fat_percent?: number | string;
@@ -38,6 +39,7 @@ const persistUserProfile = (data: UserProfile) => {
       display_name: data.display_name || "",
       last_login: data.last_login || "",
       profile_image: data.profile_image || "",
+      mcp_enabled: Boolean(data.mcp_enabled),
     })
   );
   localStorage.setItem(
