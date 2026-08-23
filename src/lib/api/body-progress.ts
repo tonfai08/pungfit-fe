@@ -13,14 +13,18 @@ const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("toke
 export async function getBodyProgress(limit = 10) {
   const res = await fetch(`${API_BASE_URL}/body-progress?limit=${limit}`, { headers: authHeaders() });
   if (!res.ok) throw new Error("โหลดรูปไม่สำเร็จ");
-  return res.json() as Promise<{ records: BodyProgressRecord[]; today: string; limit: number }>;
+  return res.json() as Promise<{ records: BodyProgressRecord[]; today: string; limit: number; can_select_date: boolean }>;
 }
 
-export async function saveBodyProgress(image: Blob) {
+export async function saveBodyProgress(image: Blob, dateKey?: string) {
   const form = new FormData();
   form.append("image", image, "body-progress.jpg");
+  if (dateKey) form.append("date_key", dateKey);
   const res = await fetch(`${API_BASE_URL}/body-progress`, { method: "POST", headers: authHeaders(), body: form });
-  if (!res.ok) throw new Error("บันทึกรูปไม่สำเร็จ");
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `บันทึกรูปไม่สำเร็จ (${res.status})`);
+  }
   return res.json();
 }
 
