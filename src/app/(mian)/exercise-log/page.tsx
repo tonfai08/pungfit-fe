@@ -196,9 +196,14 @@ export default function ExerciseLogPage() {
             เลือกวันจากปฏิทินเพื่อดูรายละเอียด
           </p>
         </div>
-        <div className="text-sm text-gray-500">
-          {selectedDate.format("DD/MM/YYYY")}
-        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/exercise")}
+          className="shrink-0 rounded-full border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition hover:border-accent/50 hover:bg-accent/15 sm:text-sm"
+          aria-label="เปิดตารางออกกำลังกาย"
+        >
+          ตารางออกกำลังกาย
+        </button>
       </div>
 
       {error ? <p className="text-sm text-red-500 mb-3">{error}</p> : null}
