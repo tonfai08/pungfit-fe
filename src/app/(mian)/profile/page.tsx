@@ -16,6 +16,27 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FaImages, FaUserCircle } from "react-icons/fa";
 
+async function cropProfileImage(file: File, zoom: number, x: number, y: number) {
+  const bitmap = await createImageBitmap(file);
+  const cropSize = Math.min(bitmap.width, bitmap.height) / zoom;
+  const maxX = bitmap.width - cropSize;
+  const maxY = bitmap.height - cropSize;
+  const sourceX = Math.max(0, Math.min(maxX, maxX / 2 + (x / 100) * maxX / 2));
+  const sourceY = Math.max(0, Math.min(maxY, maxY / 2 + (y / 100) * maxY / 2));
+  const canvas = document.createElement("canvas");
+  canvas.width = 800;
+  canvas.height = 800;
+  canvas.getContext("2d")?.drawImage(bitmap, sourceX, sourceY, cropSize, cropSize, 0, 0, 800, 800);
+  bitmap.close();
+  return new Promise<File>((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => blob ? resolve(new File([blob], "profile.jpg", { type: "image/jpeg" })) : reject(new Error("Crop failed")),
+      "image/jpeg",
+      0.9
+    )
+  );
+}
+
 interface UserProfile {
   email: string;
   last_login?: string;
@@ -61,6 +82,9 @@ export default function ProfilePage() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [profileZoom, setProfileZoom] = useState(1);
+  const [profileX, setProfileX] = useState(0);
+  const [profileY, setProfileY] = useState(0);
   const [mcpAccessKey, setMcpAccessKey] = useState("");
 
   const updateStoredMcpStatus = (enabled: boolean) => {
@@ -218,7 +242,8 @@ export default function ProfilePage() {
 
     try {
       setSavingImage(true);
-      const res = await updateProfileImage(selectedFile);
+      const croppedFile = await cropProfileImage(selectedFile, profileZoom, profileX, profileY);
+      const res = await updateProfileImage(croppedFile);
       const newImageUrl = res.profile_image;
 
       const baseUrl =
@@ -260,8 +285,12 @@ export default function ProfilePage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (previewImage) URL.revokeObjectURL(previewImage);
       setSelectedFile(file);
       setPreviewImage(URL.createObjectURL(file));
+      setProfileZoom(1);
+      setProfileX(0);
+      setProfileY(0);
     }
   };
 
@@ -605,19 +634,26 @@ export default function ProfilePage() {
 
       <Modal
         isOpen={isEditImageOpen}
-        onClose={() => setIsEditImageOpen(false)}
+        onClose={() => {
+          if (savingImage) return;
+          setIsEditImageOpen(false);
+          setSelectedFile(null);
+          if (previewImage) URL.revokeObjectURL(previewImage);
+          setPreviewImage(null);
+        }}
         title="เปลี่ยนรูปโปรไฟล์"
       >
         <div className="flex flex-col items-center space-y-3">
           <label htmlFor="profile-image-input" className="cursor-pointer">
             {previewImage ? (
-              <Image
+              <div className="h-[240px] w-[240px] overflow-hidden rounded-full bg-black ring-2 ring-[#d6a27a]">
+              <img
                 src={previewImage}
-                alt="Preview"
-                width={120}
-                height={120}
-                className="rounded-full object-cover h-[120px] w-[120px] ring-1 ring-transparent transition hover:ring-[#d6a27a]"
+                alt="ตัวอย่างรูปโปรไฟล์"
+                className="h-full w-full object-cover"
+                style={{ transform: `scale(${profileZoom}) translate(${profileX / 2}%, ${profileY / 2}%)` }}
               />
+              </div>
             ) : (
               <FaUserCircle className="text-gray-300 text-[120px] transition hover:text-gray-400" />
             )}
@@ -631,6 +667,19 @@ export default function ProfilePage() {
             className="sr-only"
           />
           <span className="text-xs text-gray-500">แตะที่รูปเพื่อเลือกไฟล์</span>
+          {previewImage ? (
+            <div className="w-full space-y-2 text-left text-sm text-gray-600">
+              <label className="block">ซูม
+                <input className="block w-full accent-[#d6a27a]" type="range" min="1" max="2" step="0.05" value={profileZoom} onChange={(e) => setProfileZoom(Number(e.target.value))} />
+              </label>
+              <label className="block">ซ้าย–ขวา
+                <input className="block w-full accent-[#d6a27a]" type="range" min="-100" max="100" value={profileX} onChange={(e) => setProfileX(Number(e.target.value))} />
+              </label>
+              <label className="block">บน–ล่าง
+                <input className="block w-full accent-[#d6a27a]" type="range" min="-100" max="100" value={profileY} onChange={(e) => setProfileY(Number(e.target.value))} />
+              </label>
+            </div>
+          ) : null}
           <button
             onClick={handleSaveProfileImage}
             disabled={savingImage}
