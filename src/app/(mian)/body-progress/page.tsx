@@ -11,20 +11,18 @@ const displayDate = (date: string) => new Date(`${date}T00:00:00+07:00`).toLocal
 
 async function cropImage(file: File, zoom: number, x: number, y: number) {
   const bitmap = await createImageBitmap(file);
-  const targetRatio = 3 / 4;
-  let cropWidth = bitmap.width / zoom;
-  let cropHeight = cropWidth / targetRatio;
-  if (cropHeight > bitmap.height / zoom) {
-    cropHeight = bitmap.height / zoom;
-    cropWidth = cropHeight * targetRatio;
-  }
-  const maxX = bitmap.width - cropWidth;
-  const maxY = bitmap.height - cropHeight;
-  const sourceX = Math.max(0, Math.min(maxX, maxX / 2 + (x / 100) * maxX / 2));
-  const sourceY = Math.max(0, Math.min(maxY, maxY / 2 + (y / 100) * maxY / 2));
   const canvas = document.createElement("canvas");
   canvas.width = 900; canvas.height = 1200;
-  canvas.getContext("2d")?.drawImage(bitmap, sourceX, sourceY, cropWidth, cropHeight, 0, 0, 900, 1200);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Crop failed");
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const containScale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+  const drawWidth = bitmap.width * containScale * zoom;
+  const drawHeight = bitmap.height * containScale * zoom;
+  const drawX = (canvas.width - drawWidth) / 2 + (x / 200) * canvas.width;
+  const drawY = (canvas.height - drawHeight) / 2 + (y / 200) * canvas.height;
+  context.drawImage(bitmap, drawX, drawY, drawWidth, drawHeight);
   bitmap.close();
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Crop failed")), "image/jpeg", 0.88));
 }
@@ -89,7 +87,7 @@ export default function BodyProgressPage() {
     <div className="mt-7 flex justify-center"><label className="flex cursor-pointer items-center gap-2 rounded-full bg-accent px-5 py-3 font-medium text-white shadow-lg"><FaCamera />{canSelectDate ? "เพิ่มรูปสำหรับทดสอบ" : hasToday ? "เปลี่ยนรูปวันนี้" : "บันทึกรูปวันนี้"}<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" onChange={e => chooseFile(e.target.files?.[0])} /></label></div>
     <p className="mt-3 text-center text-xs text-gray-400">วันเก่าลบได้ แต่เปลี่ยนรูปย้อนหลังไม่ได้</p>
     <Modal open={Boolean(file)} onCancel={closeEditor} onOk={save} okText={saving ? "กำลังบันทึก..." : "บันทึกรูป"} cancelText="ยกเลิก" confirmLoading={saving} title="จัดตำแหน่งรูปแนวตั้ง">
-      {preview ? <>{canSelectDate ? <label className="mb-4 block text-sm font-medium">วันที่สำหรับทดสอบ<input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" /></label> : null}<div className="mx-auto aspect-[3/4] w-full max-w-xs overflow-hidden rounded-xl bg-black"><img src={preview} alt="ตัวอย่างก่อนบันทึก" className="h-full w-full object-cover" style={{ transform:`scale(${zoom}) translate(${x/2}%, ${y/2}%)` }} /></div>
+      {preview ? <>{canSelectDate ? <label className="mb-4 block text-sm font-medium">วันที่สำหรับทดสอบ<input type="date" value={selectedDate} max={today} onChange={e => setSelectedDate(e.target.value)} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2" /></label> : null}<div className="mx-auto aspect-[3/4] w-full max-w-xs overflow-hidden rounded-xl bg-black"><img src={preview} alt="ตัวอย่างก่อนบันทึก" className="h-full w-full object-contain" style={{ transform:`translate(${x/2}%, ${y/2}%) scale(${zoom})` }} /></div>
       <label className="mt-4 block text-sm">ซูม<input className="w-full" type="range" min="1" max="2" step="0.05" value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></label>
       <label className="mt-2 block text-sm">ซ้าย–ขวา<input className="w-full" type="range" min="-100" max="100" value={x} onChange={e=>setX(Number(e.target.value))}/></label>
       <label className="mt-2 block text-sm">บน–ล่าง<input className="w-full" type="range" min="-100" max="100" value={y} onChange={e=>setY(Number(e.target.value))}/></label></> : null}

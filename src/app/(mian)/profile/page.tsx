@@ -18,15 +18,19 @@ import { FaImages, FaUserCircle } from "react-icons/fa";
 
 async function cropProfileImage(file: File, zoom: number, x: number, y: number) {
   const bitmap = await createImageBitmap(file);
-  const cropSize = Math.min(bitmap.width, bitmap.height) / zoom;
-  const maxX = bitmap.width - cropSize;
-  const maxY = bitmap.height - cropSize;
-  const sourceX = Math.max(0, Math.min(maxX, maxX / 2 + (x / 100) * maxX / 2));
-  const sourceY = Math.max(0, Math.min(maxY, maxY / 2 + (y / 100) * maxY / 2));
   const canvas = document.createElement("canvas");
   canvas.width = 800;
   canvas.height = 800;
-  canvas.getContext("2d")?.drawImage(bitmap, sourceX, sourceY, cropSize, cropSize, 0, 0, 800, 800);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Crop failed");
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const containScale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+  const drawWidth = bitmap.width * containScale * zoom;
+  const drawHeight = bitmap.height * containScale * zoom;
+  const drawX = (canvas.width - drawWidth) / 2 + (x / 200) * canvas.width;
+  const drawY = (canvas.height - drawHeight) / 2 + (y / 200) * canvas.height;
+  context.drawImage(bitmap, drawX, drawY, drawWidth, drawHeight);
   bitmap.close();
   return new Promise<File>((resolve, reject) =>
     canvas.toBlob(
@@ -650,8 +654,8 @@ export default function ProfilePage() {
               <img
                 src={previewImage}
                 alt="ตัวอย่างรูปโปรไฟล์"
-                className="h-full w-full object-cover"
-                style={{ transform: `scale(${profileZoom}) translate(${profileX / 2}%, ${profileY / 2}%)` }}
+                className="h-full w-full object-contain"
+                style={{ transform: `translate(${profileX / 2}%, ${profileY / 2}%) scale(${profileZoom})` }}
               />
               </div>
             ) : (
