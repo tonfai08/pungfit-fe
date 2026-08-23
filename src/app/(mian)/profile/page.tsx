@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaUserCircle } from "react-icons/fa";
+import { FaImages, FaUserCircle } from "react-icons/fa";
 
 interface UserProfile {
   email: string;
@@ -335,6 +335,20 @@ export default function ProfilePage() {
           className="mt-6 bg-[#d6a27a] text-white py-2 px-6 rounded-md hover:bg-[#c9966f]"
         >
           แก้ไขข้อมูลทั่วไป
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push("/body-progress")}
+          className="mt-6 flex w-full items-center gap-4 rounded-2xl border border-accent/25 bg-accent/5 p-4 text-left transition hover:border-accent/50 hover:bg-accent/10"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+            <FaImages />
+          </span>
+          <span>
+            <span className="block font-semibold text-gray-800">ฟิล์มรูปร่างของฉัน</span>
+            <span className="mt-1 block text-sm text-gray-500">บันทึกรูปวันละครั้งและดูการเปลี่ยนแปลง</span>
+          </span>
         </button>
 
         <div className="mt-8 rounded-2xl border border-accent/25 bg-accent/5 p-4 text-left sm:p-5">
