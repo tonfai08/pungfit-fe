@@ -131,3 +131,20 @@ export async function analyzeFoodImage(file: File) {
   const data = (await res.json().catch(() => ({}))) as AnalyzeFoodImageResponse;
   return data.meal ?? data.food ?? data;
 }
+
+export async function analyzeFoodText(description: string) {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("No token");
+  const res = await fetch(`${API_BASE_URL}/meals/analyze-text`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ description, lang: "th" }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Failed to analyze food text");
+  }
+  const data = (await res.json().catch(() => ({}))) as AnalyzeFoodImageResponse;
+  return data.meal ?? data.food ?? data;
+}

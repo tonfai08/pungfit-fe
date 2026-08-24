@@ -6,7 +6,7 @@ import Modal from "@/components/Modal";
 import PageLoader from "@/components/PageLoader";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { isLoggedIn } from "@/lib/api/auth";
-import { analyzeFoodImage, getFoodByBarcode, type Food } from "@/lib/api/food";
+import { analyzeFoodImage, analyzeFoodText, getFoodByBarcode, type Food } from "@/lib/api/food";
 import {
   createMealRecord,
   deleteMealRecord,
@@ -67,6 +67,7 @@ export default function MealsPage() {
   // ✅ สำหรับ modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+  const [isAiInputOpen, setIsAiInputOpen] = useState(false);
   const [mealForm, setMealForm] = useState({
     date: dayjs().format("YYYY-MM-DD"),
     meal_type: "",
@@ -82,6 +83,7 @@ export default function MealsPage() {
   const [cameraError, setCameraError] = useState("");
   const [imageAnalyzeError, setImageAnalyzeError] = useState("");
   const [imageAnalyzing, setImageAnalyzing] = useState(false);
+  const [foodDescription, setFoodDescription] = useState("");
   const [mealSaving, setMealSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -222,7 +224,29 @@ export default function MealsPage() {
       carbs: (food.carbs ?? prev.carbs ?? "").toString(),
     }));
     setIsModalOpen(true);
+    setIsAiInputOpen(false);
     setImageAnalyzeError("");
+  };
+
+  const handleFoodTextAnalyze = async () => {
+    const description = foodDescription.trim();
+    if (description.length < 3) {
+      setImageAnalyzeError("พิมพ์ชื่ออาหารและปริมาณให้ละเอียดอีกนิด");
+      return;
+    }
+    try {
+      setImageAnalyzing(true);
+      setImageAnalyzeError("");
+      const food = await analyzeFoodText(description);
+      if (!food) return setImageAnalyzeError("AI ไม่สามารถประเมินอาหารนี้ได้");
+      applyAnalyzedFoodToForm(food);
+      setFoodDescription("");
+    } catch (err) {
+      console.error("Failed to analyze food text:", err);
+      setImageAnalyzeError(err instanceof Error ? err.message : "วิเคราะห์ข้อความไม่สำเร็จ");
+    } finally {
+      setImageAnalyzing(false);
+    }
   };
 
   const handleFoodImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -317,13 +341,13 @@ export default function MealsPage() {
         <button
           type="button"
           className="flex h-16 flex-col items-center justify-center gap-1 rounded-xl text-[0px] text-accent transition hover:bg-accent hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-          onClick={() => imageInputRef.current?.click()}
+          onClick={() => setIsAiInputOpen(true)}
           disabled={imageAnalyzing}
-          aria-label="วิเคราะห์จากรูป"
+          aria-label="ให้ AI วิเคราะห์อาหาร"
         >
           <FaCamera className="h-5 w-5" />
           <span className="text-xs">{imageAnalyzing ? "Analyzing" : "AI"}</span>
-          {imageAnalyzing ? "กำลังวิเคราะห์..." : "วิเคราะห์จากรูป"}
+          {imageAnalyzing ? "กำลังวิเคราะห์..." : "พิมพ์หรือถ่ายรูป"}
         </button>
         <button
           type="button"
@@ -355,11 +379,50 @@ export default function MealsPage() {
             <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-accent/20 border-t-accent" />
             <p className="font-semibold text-gray-900">AI กำลังวิเคราะห์อาหาร</p>
             <p className="mt-1 text-sm text-gray-500">
-              รอสักครู่ ระบบกำลังประเมินสารอาหารจากรูป
+              รอสักครู่ ระบบกำลังประเมินสารอาหาร
             </p>
           </div>
         </div>
       ) : null}
+
+      <Modal
+        isOpen={isAiInputOpen}
+        onClose={() => { if (!imageAnalyzing) { setIsAiInputOpen(false); setImageAnalyzeError(""); } }}
+        title="ให้ AI ช่วยประเมินอาหาร"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">พิมพ์บอกอาหารและปริมาณ</label>
+            <textarea
+              value={foodDescription}
+              onChange={(e) => { setFoodDescription(e.target.value); setImageAnalyzeError(""); }}
+              rows={4}
+              maxLength={2000}
+              placeholder="เช่น ข้าวกะเพราหมูกรอบ 1 จาน หมูกรอบประมาณ 100 กรัม ไข่ดาว 1 ฟอง"
+              className="w-full resize-none rounded-xl border border-gray-300 px-3 py-3 outline-none focus:border-accent"
+            />
+            <button
+              type="button"
+              onClick={handleFoodTextAnalyze}
+              disabled={imageAnalyzing || foodDescription.trim().length < 3}
+              className="mt-2 w-full rounded-xl bg-accent py-3 font-medium text-white disabled:opacity-50"
+            >
+              {imageAnalyzing ? "AI กำลังวิเคราะห์..." : "วิเคราะห์จากข้อความ"}
+            </button>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-gray-400"><span className="h-px flex-1 bg-gray-200" />หรือ<span className="h-px flex-1 bg-gray-200" /></div>
+          <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            disabled={imageAnalyzing}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-accent py-3 font-medium text-accent disabled:opacity-50"
+          >
+            <FaCamera /> ถ่ายรูปหรือเลือกรูปอาหาร
+          </button>
+          {imageAnalyzeError ? <p className="text-sm text-red-500">{imageAnalyzeError}</p> : null}
+          <p className="text-xs text-gray-400">AI จะกรอกข้อมูลลงฟอร์มให้ คุณตรวจและแก้ไขก่อนบันทึกได้</p>
+        </div>
+      </Modal>
 
       <div className="w-full">
         <h1 className="text-xl font-semibold text-center mb-4">
