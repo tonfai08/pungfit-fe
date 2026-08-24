@@ -20,6 +20,11 @@ export interface WorkoutExercise {
     media?: {
       image_url?: string;
       video_url?: string;
+      source?: string;
+      source_url?: string;
+      license?: string;
+      license_url?: string;
+      attribution?: string;
     };
   };
   type?: string;

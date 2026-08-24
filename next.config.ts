@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: "api.pungfit.life",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "wger.de",
+        pathname: "/media/**",
+      },
     ],
   },
 };

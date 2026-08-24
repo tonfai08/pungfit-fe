@@ -75,6 +75,10 @@ function getYoutubeEmbedUrl(url: string) {
   return "";
 }
 
+function isDirectVideo(url: string) {
+  return /\.(mp4|mov|webm)(?:\?|$)/i.test(url);
+}
+
 export default function ExercisePage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -154,7 +158,7 @@ export default function ExercisePage() {
                         const embedUrl = rawVideoUrl
                           ? getYoutubeEmbedUrl(rawVideoUrl)
                           : "";
-                        const canPlay = Boolean(embedUrl);
+                        const canPlay = Boolean(embedUrl || (rawVideoUrl && isDirectVideo(rawVideoUrl)));
                         return (
                       <li
                         key={`${day.key}-${item.exerciseId?._id ?? index}`}
@@ -164,7 +168,7 @@ export default function ExercisePage() {
                           type="button"
                           className={`relative w-1/2 h-24 ${canPlay ? "cursor-pointer" : "cursor-default"}`}
                           onClick={() => {
-                            if (embedUrl) setVideoUrl(embedUrl);
+                            if (embedUrl || rawVideoUrl) setVideoUrl(embedUrl || rawVideoUrl || null);
                           }}
                           aria-label={
                             canPlay ? "ดูวิดีโอท่าออกกำลังกาย" : "ไม่มีวิดีโอ"
@@ -192,6 +196,12 @@ export default function ExercisePage() {
                           <p className="text-sm text-gray-600 mt-1">
                             {formatExerciseDetail(item)}
                           </p>
+                          {item.exerciseId?.media?.source_url ? (
+                            <a href={item.exerciseId.media.source_url} target="_blank" rel="noreferrer" className="mt-1 block text-[10px] text-gray-400 underline">
+                              {item.exerciseId.media.attribution || item.exerciseId.media.source}
+                              {item.exerciseId.media.license ? ` • ${item.exerciseId.media.license}` : ""}
+                            </a>
+                          ) : null}
                         </div>
                       </li>
                         );
@@ -214,7 +224,9 @@ export default function ExercisePage() {
         onClose={() => setVideoUrl(null)}
         title="วิดีโอการออกกำลังกาย"
       >
-        {videoUrl ? (
+        {videoUrl && isDirectVideo(videoUrl) ? (
+          <video src={videoUrl} controls playsInline className="max-h-[70vh] w-full rounded-lg bg-black" />
+        ) : videoUrl ? (
           <div className="relative w-full pt-[56.25%]">
             <iframe
               src={videoUrl}
