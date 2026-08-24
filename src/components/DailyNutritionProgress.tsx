@@ -17,6 +17,9 @@ export default function DailyNutritionProgress() {
     const [summary, setSummary] = useState<Nutrient | null>(null);
     const [tdee, setTdee] = useState<Nutrient | null>(null);
     const [loading, setLoading] = useState(true);
+    const [animatedProgress, setAnimatedProgress] = useState<Nutrient>({
+        calories: 0, protein: 0, fat: 0, carbs: 0,
+    });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -39,18 +42,25 @@ export default function DailyNutritionProgress() {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (!summary || !tdee) return;
+        const calc = (value: number, target: number) => target > 0
+            ? Math.min((value / target) * 100, 100)
+            : 0;
+        setAnimatedProgress({ calories: 0, protein: 0, fat: 0, carbs: 0 });
+        const frame = requestAnimationFrame(() => requestAnimationFrame(() => {
+            setAnimatedProgress({
+                calories: calc(summary.calories, tdee.calories),
+                protein: calc(summary.protein, tdee.protein),
+                fat: calc(summary.fat, tdee.fat),
+                carbs: calc(summary.carbs, tdee.carbs),
+            });
+        }));
+        return () => cancelAnimationFrame(frame);
+    }, [summary, tdee]);
+
     if (loading) return <p className="text-sm text-gray-500">กำลังโหลดข้อมูล...</p>;
     if (!summary || !tdee) return null;
-
-    const calcPercent = (value: number, target: number) =>
-        Math.min((value / target) * 100, 100);
-
-    const progress = {
-        calories: calcPercent(summary.calories, tdee.calories),
-        protein: calcPercent(summary.protein, tdee.protein),
-        fat: calcPercent(summary.fat, tdee.fat),
-        carbs: calcPercent(summary.carbs, tdee.carbs),
-    };
 
     return (
         <div className="bg-white w-full w-full max-w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl rounded-xl flex flex-col align-items-center; justify-center p-4 mb-2">
@@ -59,12 +69,13 @@ export default function DailyNutritionProgress() {
             {/* 🔵 วงกลมฝั่งซ้าย (พลังงานรวม) */}
             <div className="w-36 h-36 relative flex flex-col items-center justify-center">
                 <CircularProgressbar
-                    value={progress.calories}
+                    value={animatedProgress.calories}
                     styles={buildStyles({
                         pathColor: "#f97316",
                         trailColor: "#eee",
                         textColor: "#333",
                         strokeLinecap: "round",
+                        pathTransitionDuration: 1.2,
                     })}
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -84,7 +95,7 @@ export default function DailyNutritionProgress() {
                 ].map((item) => {
                     const value = summary[item.key as keyof Nutrient] || 0;
                     const goal = tdee[item.key as keyof Nutrient] || 1;
-                    const percent = calcPercent(value, goal);
+                    const percent = animatedProgress[item.key as keyof Nutrient];
 
                     return (
                         <div key={item.key}>
@@ -96,7 +107,7 @@ export default function DailyNutritionProgress() {
                             </div>
                             <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
                                 <div
-                                    className={`${item.color} h-3 rounded-full transition-all duration-500`}
+                                    className={`${item.color} h-3 rounded-full transition-[width] duration-[1200ms] ease-out`}
                                     style={{ width: `${percent}%` }}
                                 ></div>
                             </div>
