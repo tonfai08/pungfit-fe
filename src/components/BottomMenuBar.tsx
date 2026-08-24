@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter, usePathname } from "next/navigation";
-import { FaHome, FaDumbbell, FaImages } from "react-icons/fa";
+import { FaHome, FaDumbbell, FaUsers } from "react-icons/fa";
 import { IoFastFoodOutline } from "react-icons/io5";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
@@ -12,7 +12,7 @@ export default function BottomMenuBar() {
 
   const menuItems = [
     { label: "อาหาร", icon: <IoFastFoodOutline />, path: "/meals" },
-    { label: "รูปร่าง", icon: <FaImages />, path: "/body-progress" },
+    { label: "กลุ่ม", icon: <FaUsers />, path: "/group" },
     { label: "หน้าหลัก", icon: <FaHome />, path: "/dashboard",isMain:true},
     { label: "ออกกำลังกาย", icon: <FaDumbbell />, path: "/exercise-log" },
     { label: "เพิ่มเติม", icon: <BsThreeDotsVertical />, path: "/profile" },

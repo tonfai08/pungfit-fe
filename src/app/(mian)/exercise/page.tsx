@@ -115,6 +115,9 @@ export default function ExercisePage() {
           </span>
         ) : null}
       </div>
+      <button onClick={() => router.push("/exercise-ai")} className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 font-medium text-white">
+        ✨ ให้ AI จัดตารางออกกำลังกาย
+      </button>
 
       {error ? <p className="text-sm text-red-500 mb-3">{error}</p> : null}
 
@@ -226,4 +229,3 @@ export default function ExercisePage() {
     </div>
   );
 }
-

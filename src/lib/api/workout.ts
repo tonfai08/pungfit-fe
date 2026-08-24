@@ -11,6 +11,7 @@ function getToken() {
 export type DayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export interface WorkoutExercise {
+  exerciseName?: string;
   exerciseId?: {
     _id: string;
     name: string;
@@ -49,4 +50,26 @@ export async function getMyWorkoutPlan() {
 
   const data = await res.json().catch(() => ({}));
   return data?.workoutPlan ?? null;
+}
+
+export async function generateAIWorkoutPlan(prompt: string) {
+  const res = await fetch(`${API_BASE_URL}/workout-plans/generate-ai`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "สร้างตารางไม่สำเร็จ");
+  return data.plan;
+}
+
+export async function saveWorkoutPlan(plan: Omit<WorkoutPlan, "_id">) {
+  const res = await fetch(`${API_BASE_URL}/workout-plans/me`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${getToken()}`, "Content-Type": "application/json" },
+    body: JSON.stringify(plan),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "บันทึกตารางไม่สำเร็จ");
+  return data.workoutPlan;
 }
