@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 type PublicEvent = {
   id: string; slug: string; name: string; short_description: string;
@@ -50,25 +51,11 @@ export default function EventPortal() {
   }, []);
 
   return <div className="event-portal">
-    <header className="event-portal__header">
-      <span className="event-portal__brand">pung<span>Fit.</span></span>
-      <span className="event-portal__header-note">Community events · Bangkok</span>
-    </header>
     <main className="event-portal__main">
-      <aside className="event-portal__poster" aria-label="โปสเตอร์ Sunday Running Club">
-        <div>
-          <div className="event-portal__poster-copy">
-            <small>ESTD. 2026 · BANGKOK</small>
-            <strong>Sunday<br />Running<br />Club</strong>
-            <em>Move together, feel better.</em>
-          </div>
-          <div className="event-portal__runner" aria-hidden="true" />
-        </div>
+      <aside className="event-portal__poster">
+        <Image src="/bk/banner.jpg" alt="ภาพประชาสัมพันธ์กิจกรรม" fill priority sizes="(max-width: 760px) 100vw, 340px" />
       </aside>
-      <section className="event-portal__content" aria-labelledby="events-title">
-        <p className="event-portal__eyebrow">Upcoming gatherings</p>
-        <h1 id="events-title">เลือกงานที่อยากไป</h1>
-        <p className="event-portal__intro">กิจกรรม วิ่ง และงานพบปะจากชุมชนของเรา เลือกงานเพื่อดูสถานะการจองและรายละเอียดเบื้องต้น</p>
+      <section className="event-portal__content" aria-label="รายการกิจกรรม">
         <div className="event-list" aria-live="polite">
           {loading && <><div className="event-skeleton" /><div className="event-skeleton" /></>}
           {!loading && error && <div className="event-state event-state--error"><strong>โหลดรายการไม่ได้</strong>{error}</div>}
