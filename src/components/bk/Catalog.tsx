@@ -198,6 +198,7 @@ export function EventEditor({ id }: { id: string }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(id !== 'new');
+  const [articleBusy, setArticleBusy] = useState(false);
   const [draft, setDraft] = useState<EventDraft>({
     name: '',
     slug: '',
@@ -224,6 +225,7 @@ export function EventEditor({ id }: { id: string }) {
   const set = (key: string, value: unknown) =>
     setDraft((previous) => ({ ...previous, [key]: value }));
   async function save() {
+    if (articleBusy || busy) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -297,7 +299,7 @@ export function EventEditor({ id }: { id: string }) {
             aria-selected={tab === key}
             className={tab === key ? 'active' : ''}
             key={key}
-            disabled={id === 'new' && key !== 'info'}
+            disabled={articleBusy || (id === 'new' && key !== 'info')}
             onClick={() => setTab(key)}
           >
             {key === 'bookings' && draft.booking_mode === 'capacity' ? 'การลงทะเบียน' : label}
@@ -305,7 +307,7 @@ export function EventEditor({ id }: { id: string }) {
         ))}
       </div>
       {id !== 'new' && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button danger onClick={() => setDeleteOpen(true)}>ลบ Event</Button>
+        <Button danger disabled={articleBusy} onClick={() => setDeleteOpen(true)}>ลบ Event</Button>
       </div>}
       <Modal open={deleteOpen} title="ลบ Event" okText="ยืนยันลบ Event" cancelText="ยกเลิก"
         okButtonProps={{ danger: true }} confirmLoading={busy} onCancel={() => !busy && setDeleteOpen(false)}
@@ -407,6 +409,7 @@ export function EventEditor({ id }: { id: string }) {
             <RichEditor
               value={draft.content_html}
               onChange={(html) => set('content_html', html)}
+              onBusyChange={setArticleBusy}
             />
           </div>
           <div className="bk-panel">
@@ -543,7 +546,7 @@ export function EventEditor({ id }: { id: string }) {
             </div>
           </div>
           <div className="bk-actions">
-            <button className="bk-primary" disabled={busy}>
+            <button className="bk-primary" disabled={busy || articleBusy}>
               {busy ? 'กำลังบันทึก…' : 'บันทึก Event'}
             </button>
           </div>

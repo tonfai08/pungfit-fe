@@ -11,6 +11,13 @@
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
     "@reduxjs/toolkit": "^2.9.0",
+    "@tiptap/extension-image": "^3.31.3",
+    "@tiptap/extension-table": "^3.31.3",
+    "@tiptap/extension-text-align": "^3.31.3",
+    "@tiptap/extension-text-style": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "antd": "^6.2.1",
     "axios": "^1.12.2",
     "date-fns": "^4.1.0",

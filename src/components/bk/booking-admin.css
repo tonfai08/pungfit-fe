@@ -905,3 +905,22 @@
     font-size: 16px;
   }
 }
+.bk-article-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; border-bottom: 1px solid #d8e4df; background: #f5f8f6; }
+.bk-app .bk-tiptap .ant-btn { padding: 4px 10px; height: 32px; font-size: 13px; }
+.bk-app .bk-tiptap .ant-btn-primary { background: #196950; color: white; border-color: #196950; }
+.bk-app .bk-tiptap .ant-btn:disabled { opacity: .45; }
+.bk-article-hint { padding: 0 16px 12px; font-size: 12px; color: #627971; }
+.bk-tiptap { overflow: hidden; }
+.bk-rich-content { overflow-wrap: anywhere; line-height: 1.7; }
+.bk-rich-content table { border-collapse: collapse; width: 100%; table-layout: fixed; margin: 16px 0; }
+.bk-rich-content td, .bk-rich-content th { border: 1px solid #a8bfb5; padding: 8px; min-width: 60px; position: relative; vertical-align: top; }
+.bk-rich-content th { background: #e7f0ea; font-weight: 600; }
+.bk-rich-content .selectedCell::after { content: ''; position: absolute; inset: 0; background: #5599dd30; pointer-events: none; }
+.bk-rich-content .tableWrapper { overflow-x: auto; }
+.bk-rich-content blockquote { border-left: 3px solid #82ad99; margin: 16px 0; padding-left: 16px; color: #587068; }
+.bk-rich-content pre { background: #edf2ef; padding: 16px; border-radius: 8px; white-space: pre-wrap; }
+.bk-rich-content figure { margin: 20px 0; }
+.bk-rich-content figure img { display: block; max-width: 100%; max-height: none; height: auto; }
+.bk-rich-content figcaption { color: #63776e; font-size: 13px; margin-top: 6px; }
+.bk-rich-content .ProseMirror-selectednode { outline: 2px solid #267d60; outline-offset: 3px; }
+.bk-rich-content hr { border: 0; border-top: 1px solid #a8bfb5; margin: 24px 0; }

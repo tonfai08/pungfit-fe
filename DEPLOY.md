@@ -2,7 +2,7 @@
 
 เมื่อสั่ง deploy ให้ build/push จาก repo frontend ไป registry นี้ ใช้ branch `dev` ตาม workflow โปรเจกต์
 
-รอบนี้ใช้เวอร์ชัน `1.0.12` ทั้ง backend และ frontend ตามคำสั่งให้เลขตรงกัน ก่อน deploy รอบถัดไปตรวจ release ล่าสุดและเพิ่มเวอร์ชันโดยไม่เขียนทับ tag เก่า
+รอบนี้ใช้เวอร์ชัน `1.0.13` ทั้ง backend และ frontend ตามคำสั่งให้เลขตรงกัน ก่อน deploy รอบถัดไปตรวจ release ล่าสุดและเพิ่มเวอร์ชันโดยไม่เขียนทับ tag เก่า
 
 Next.js ต้องได้รับ public config และ booking API rewrite ตอน build ใช้ค่าที่ผู้ใช้ระบุโดยตรงดังนี้ Google Client ID เป็น public identifier ไม่ใช่ client secret
 
@@ -13,7 +13,7 @@ docker build `
     --build-arg "BK_API_ORIGIN=https://api.pungfit.life" `
     --build-arg "NEXT_PUBLIC_API_BASE_URL=https://api.pungfit.life/v1" `
     --build-arg "NEXT_PUBLIC_GOOGLE_CLIENT_ID=836356824774-6efvqqtd7p3ande4joaeou26blke762i.apps.googleusercontent.com" `
-    -t ara-registry.gipsic.net/pungfit-fe:1.0.12 `
+    -t ara-registry.gipsic.net/pungfit-fe:1.0.13 `
     --push .
 if ($LASTEXITCODE -ne 0) { throw 'Frontend build/push failed' }
 ```
