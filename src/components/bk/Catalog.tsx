@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Radio, Alert } from 'antd';
+import { Radio, Alert, InputNumber, Button, Modal } from 'antd';
 import {
   bkApi,
   bkUpload,
@@ -193,6 +193,7 @@ function localDate(value?: string) {
 export function EventEditor({ id }: { id: string }) {
   const router = useRouter();
   const [tab, setTab] = useState('info');
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -206,6 +207,7 @@ export function EventEditor({ id }: { id: string }) {
     table_selection_mode: 'admin_assign',
     waitlist_enabled: false,
     payment_required: true,
+    booking_mode: 'table',
     payment_due_minutes: 30,
   });
   useEffect(() => {
@@ -241,6 +243,10 @@ export function EventEditor({ id }: { id: string }) {
         'table_selection_mode',
         'waitlist_enabled',
         'payment_required',
+        'booking_mode',
+        'capacity_limit',
+        'max_attendees_per_booking',
+        'price_per_attendee_satang',
         'payment_due_minutes',
         'payment_instructions',
         'booking_terms',
@@ -285,7 +291,7 @@ export function EventEditor({ id }: { id: string }) {
           ['payments', 'ตรวจชำระเงิน'],
           ['waitlist', 'รายชื่อสำรอง'],
           ['checkin', 'เช็กอิน'],
-        ].map(([key, label]) => (
+        ].filter(([key]) => key !== 'layout' || draft.booking_mode !== 'capacity').map(([key, label]) => (
           <button
             role="tab"
             aria-selected={tab === key}
@@ -294,10 +300,24 @@ export function EventEditor({ id }: { id: string }) {
             disabled={id === 'new' && key !== 'info'}
             onClick={() => setTab(key)}
           >
-            {label}
+            {key === 'bookings' && draft.booking_mode === 'capacity' ? 'การลงทะเบียน' : label}
           </button>
         ))}
       </div>
+      {id !== 'new' && <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <Button danger onClick={() => setDeleteOpen(true)}>ลบ Event</Button>
+      </div>}
+      <Modal open={deleteOpen} title="ลบ Event" okText="ยืนยันลบ Event" cancelText="ยกเลิก"
+        okButtonProps={{ danger: true }} confirmLoading={busy} onCancel={() => !busy && setDeleteOpen(false)}
+        onOk={async () => {
+          setBusy(true); setError('');
+          try { await bkApi(`/events/${id}`, { method: 'DELETE' }); router.replace('/booking-admin/events'); }
+          catch (e) { setError(errorMessage(e)); setDeleteOpen(false); }
+          finally { setBusy(false); }
+        }}>
+        <p>ลบงาน “{draft.name}” ออกจากรายการ? ระบบจะเก็บประวัติไว้ แต่จะเปิดหรือแก้ไขงานนี้ไม่ได้</p>
+        <p>ต้องจัดการรายการจองและรายชื่อสำรองที่ยังมีผลก่อนลบ</p>
+      </Modal>
       {error && (
         <p className="bk-error" role="alert">
           {error}
@@ -436,6 +456,23 @@ export function EventEditor({ id }: { id: string }) {
           </div>
           <div className="bk-panel">
             <h2>เงื่อนไขการจอง</h2>
+            <p>รูปแบบการจอง</p>
+            <Radio.Group disabled={id !== 'new'} aria-label="รูปแบบการจอง" value={draft.booking_mode || 'table'}
+              onChange={(e) => set('booking_mode', e.target.value)}
+              options={[{ label: 'จองโต๊ะ', value: 'table' }, { label: 'จำกัดจำนวนผู้ร่วมงาน (ไม่ใช้โต๊ะ)', value: 'capacity' }]} />
+            {id !== 'new' && <p>รูปแบบการจองถูกล็อกหลังสร้าง Event หากต้องการเปลี่ยนให้สร้างงานใหม่</p>}
+            {draft.booking_mode === 'capacity' && <div className="bk-form-grid" style={{ marginTop: 16 }}>
+              <label>จำนวนผู้ร่วมงานสูงสุด
+                <InputNumber aria-label="จำนวนผู้ร่วมงานสูงสุด" min={1} precision={0} value={draft.capacity_limit}
+                  onChange={(value) => set('capacity_limit', value || undefined)} style={{ width: '100%' }} /></label>
+              <label>จำนวนที่นั่งสูงสุดต่อการจอง
+                <InputNumber aria-label="จำนวนที่นั่งสูงสุดต่อการจอง" min={1} precision={0} max={draft.capacity_limit}
+                  value={draft.max_attendees_per_booking} onChange={(value) => set('max_attendees_per_booking', value || undefined)} style={{ width: '100%' }} /></label>
+              {draft.payment_required !== false && <label>ราคาต่อคน (บาท)
+                <InputNumber aria-label="ราคาต่อคน (บาท)" min={0} precision={2} value={(draft.price_per_attendee_satang || 0) / 100}
+                  onChange={(value) => set('price_per_attendee_satang', Math.round((value || 0) * 100))} style={{ width: '100%' }} /></label>}
+            </div>}
+            <p style={{ marginTop: 16 }}>การชำระเงิน</p>
             <Radio.Group aria-label="การชำระเงิน" value={draft.payment_required !== false}
               onChange={(e) => set('payment_required', e.target.value)}
               options={[{ label: 'มีการชำระเงิน', value: true }, { label: 'จองฟรี ไม่ต้องชำระเงิน', value: false }]} />
@@ -457,7 +494,7 @@ export function EventEditor({ id }: { id: string }) {
                   )}
                 </select>
               </label>
-              <label>
+              {draft.booking_mode !== 'capacity' && <label>
                 การเลือกโต๊ะ
                 <select
                   value={draft.table_selection_mode}
@@ -466,7 +503,7 @@ export function EventEditor({ id }: { id: string }) {
                   <option value="admin_assign">แอดมินจัดโต๊ะให้</option>
                   <option value="customer_select">ลูกค้าเลือกโต๊ะเอง</option>
                 </select>
-              </label>
+              </label>}
               <label>
                 เวลาชำระเงิน (นาที)
                 <input

@@ -9,6 +9,10 @@ export type BkUser = {
   created_at?: string;
 };
 export type BkEvent = {
+  booking_mode?: 'table' | 'capacity';
+  capacity_limit?: number;
+  max_attendees_per_booking?: number;
+  price_per_attendee_satang?: number;
   _id: string;
   name: string;
   slug: string;
@@ -91,11 +95,15 @@ export type Assignment = {
   booking_item_id: string;
 };
 export type Inventory = {
+  booking_mode?: 'table' | 'capacity';
+  capacity?: { total: number; reserved: number; available: number; max_attendees_per_booking: number; price_per_attendee_satang: number };
   types: TableType[];
   tables: BkTable[];
   assignments: Assignment[];
 };
 export type Booking = {
+  booking_mode?: 'table' | 'capacity';
+  unit_price_per_attendee_satang?: number;
   user_id?: string;
   _id: string;
   booking_no: string;

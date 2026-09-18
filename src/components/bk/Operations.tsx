@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useState } from 'react';
 import BookingMap from './BookingMap';
+import CapacityReservationForm from './CapacityReservationForm';
 import SeatingCanvas from './SeatingCanvas';
 import {
   bkApi,
@@ -26,6 +27,7 @@ export default function Operations({
   mode: string;
 }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory>({
     types: [],
     tables: [],
@@ -48,7 +50,8 @@ export default function Operations({
     setWaitlist(waiting);
   }, [eventId]);
   useEffect(() => {
-    load().catch((e) => setError(errorMessage(e)));
+    setLoading(true);
+    load().catch((e) => setError(errorMessage(e))).finally(() => setLoading(false));
   }, [load]);
   useEffect(() => {
     setSelected('');
@@ -62,6 +65,7 @@ export default function Operations({
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  if (loading) return <p>กำลังโหลดข้อมูลการจอง…</p>;
   if (selected)
     return (
       <BookingView
@@ -105,6 +109,11 @@ export default function Operations({
   return (
     <>
       <div className="bk-stats">
+        {inventory.capacity && <>
+          <div><span>ที่นั่งคงเหลือ</span><strong>{inventory.capacity.available} / {inventory.capacity.total}</strong></div>
+          <div><span>ที่นั่งที่กันไว้ / ยืนยันแล้ว</span><strong>{inventory.capacity.reserved}</strong></div>
+          <div><span>ราคาต่อคน</span><strong>{money(inventory.capacity.price_per_attendee_satang)}</strong></div>
+        </>}
         {inventory.types.map((type) => (
           <div key={type._id}>
             <span>
@@ -148,13 +157,15 @@ export default function Operations({
           )}
         </div>
       </div>
-      {mode === 'bookings' && <BookingMap eventId={eventId} inventory={inventory} bookings={bookings} onChange={load} />}
+      {mode === 'bookings' && !inventory.capacity && <BookingMap eventId={eventId} inventory={inventory} bookings={bookings} onChange={load} />}
       {error && (
         <p role="alert" className="bk-error">
           {error}
         </p>
       )}
-      {showForm && (
+      {showForm && inventory.capacity && <CapacityReservationForm eventId={eventId} capacity={inventory.capacity}
+        waitlist={mode === 'waitlist'} onSaved={async () => { setShowForm(false); await load(); }} />}
+      {showForm && !inventory.capacity && (
         <ReservationForm
           eventId={eventId}
           inventory={inventory}
@@ -171,7 +182,7 @@ export default function Operations({
             <thead>
               <tr>
                 <th>ผู้ติดต่อ</th>
-                <th>ประเภทโต๊ะ</th>
+                <th>{inventory.capacity ? 'รูปแบบ' : 'ประเภทโต๊ะ'}</th>
                 <th>จำนวน</th>
                 <th>สถานะ</th>
                 <th>จัดการ</th>
@@ -185,14 +196,14 @@ export default function Operations({
                     <small>{entry.contact_phone}</small>
                   </td>
                   <td>
-                    {
+                    {inventory.capacity ? 'ไม่ระบุโต๊ะ' :
                       inventory.types.find(
                         (type) => type._id === entry.table_type_id,
                       )?.name
                     }
                   </td>
                   <td>
-                    {entry.quantity} โต๊ะ / {entry.attendee_count} คน
+                    {!inventory.capacity && `${entry.quantity} โต๊ะ / `}{entry.attendee_count} คน
                   </td>
                   <td>
                     <span className={`bk-badge ${entry.status}`}>
@@ -504,7 +515,7 @@ function BookingView({
   const root = `/events/${eventId}/bookings/${bookingId}`;
   const load = useCallback(async () => {
     const data = await bkApi<BookingDetail>(root);
-    setLayout(await bkApi<BkLayout>(`/events/${eventId}/layout`));
+    if (data.booking.booking_mode !== 'capacity') setLayout(await bkApi<BkLayout>(`/events/${eventId}/layout`));
     setDetail(data);
     setSelected(
       Object.fromEntries(
@@ -592,7 +603,7 @@ function BookingView({
           <strong>{checkedIn} คน</strong>
         </div>
       </div>
-      <div className="bk-panel">
+      {booking.booking_mode !== 'capacity' && <div className="bk-panel">
         <h3>จัดโต๊ะ</h3>
         {items.map((item) => (
           <div key={item._id} className="bk-assignment">
@@ -633,7 +644,7 @@ function BookingView({
             </button>
           </div>
         ))}
-      </div>
+      </div>}
       <div className="bk-panel">
         <h3>การชำระเงิน</h3>
         <p>กำหนดชำระ: {dateLabel(booking.payment_due_at)}</p>
