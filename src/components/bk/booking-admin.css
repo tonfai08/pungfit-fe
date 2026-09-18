@@ -80,7 +80,7 @@
   color: #b63f40;
   border-color: #efd0d0;
 }
-.bk-app label {
+.bk-app label:not(.ant-radio-wrapper):not(.ant-checkbox-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -88,7 +88,7 @@
   margin-bottom: 16px;
   min-width: 0;
 }
-.bk-app input:not([type='checkbox']),
+.bk-app input:not([type='checkbox']):not([type='radio']):not([class*='ant-']),
 .bk-app select,
 .bk-app textarea {
   background: white;
@@ -116,7 +116,7 @@
   width: 17px;
   height: 17px;
 }
-.bk-app .bk-checkbox {
+.bk-app label.bk-checkbox {
   flex-direction: row;
   align-items: center;
   gap: 9px;

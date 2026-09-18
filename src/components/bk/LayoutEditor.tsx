@@ -1,9 +1,12 @@
 'use client';
 import Link from 'next/link';
+import { Tooltip } from 'antd';
+import { ObjectShape, OccupantInfo, pastelColors, tableForObject } from './SeatingCanvas';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   bkApi,
+  Inventory,
   BkLayout,
   BkTemplate,
   CanvasObject,
@@ -41,6 +44,7 @@ function cleanLayout(layout: BkLayout) {
       rotation: object.rotation || 0,
       z_index: object.z_index || 0,
       properties_json: {
+        color: object.properties_json?.color,
         shape: object.properties_json?.shape || 'round',
         capacity: object.properties_json?.capacity || 4,
       },
@@ -58,6 +62,7 @@ export default function LayoutEditor({
   eventId?: string;
 }) {
   const router = useRouter();
+  const [inventory, setInventory] = useState<Inventory>({ types: [], tables: [], assignments: [] });
   const [layout, setLayout] = useState<BkLayout>(emptyLayout);
   const [types, setTypes] = useState<TableType[]>([]);
   const [templates, setTemplates] = useState<BkTemplate[]>([]);
@@ -86,6 +91,7 @@ export default function LayoutEditor({
         setLayout(await bkApi<BkLayout>(`/events/${eventId}/layout`));
         setTemplates(await bkApi<BkTemplate[]>('/templates'));
         await loadTypes();
+        setInventory(await bkApi<Inventory>(`/events/${eventId}/inventory`));
       } else if (templateId !== 'new')
         setLayout(await bkApi<BkLayout>(`/templates/${templateId}`));
     };
@@ -475,7 +481,10 @@ export default function LayoutEditor({
               </defs>
               <rect width="100%" height="100%" fill="url(#bk-grid)" />
               {layout.objects.map((object) => (
-                <g
+                <Tooltip key={object._id} title={(() => {
+                  const table = tableForObject(object, inventory);
+                  return table ? <OccupantInfo table={table} inventory={inventory} /> : object.label;
+                })()}><g
                   data-object={object._id}
                   key={object._id}
                   transform={`translate(${object.x} ${object.y}) rotate(${object.rotation} ${object.width / 2} ${object.height / 2})`}
@@ -488,44 +497,12 @@ export default function LayoutEditor({
                   }}
                   className={`bk-canvas-object ${object.kind} ${selected === object._id ? 'selected' : ''}`}
                 >
-                  <rect
-                    width={object.width}
-                    height={object.height}
-                    rx={
-                      object.kind === 'table' &&
-                      object.properties_json.shape === 'round'
-                        ? Math.min(object.width, object.height) / 2
-                        : 6
-                    }
-                  />
-                  {object.kind !== 'chair' && (
-                    <>
-                      <text
-                        x={object.width / 2}
-                        y={
-                          object.height / 2 - (object.kind === 'table' ? 4 : 0)
-                        }
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        {object.label}
-                      </text>
-                      {object.kind === 'table' && (
-                        <text
-                          className="bk-seat-count"
-                          x={object.width / 2}
-                          y={object.height / 2 + 15}
-                          textAnchor="middle"
-                        >
-                          {types.find(
-                            (type) => type._id === object.table_type_id,
-                          )?.capacity || object.properties_json.capacity}{' '}
-                          คน
-                        </text>
-                      )}
-                    </>
-                  )}
-                </g>
+                  <ObjectShape object={object} fill={(() => {
+                    const table = tableForObject(object, inventory);
+                    const booking = inventory.assignments.find((a) => a.event_table_id === table?._id)?.booking;
+                    return booking ? (booking.status === 'confirmed' ? '#FFB8B8' : '#FFD591') : undefined;
+                  })()} caption={String(types.find((type) => type._id === object.table_type_id)?.capacity || object.properties_json.capacity) + ' คน'} />
+                </g></Tooltip>
               ))}
             </svg>
           </div>
@@ -533,6 +510,15 @@ export default function LayoutEditor({
             {current ? (
               <>
                 <h3>ปรับแต่งวัตถุ</h3>
+                <p>สีวัตถุ (สีสถานะจะแสดงทับเมื่อโต๊ะไม่ว่าง)</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  {pastelColors.map(([name, color]) => <Tooltip title={name} key={color}>
+                    <button type="button" aria-label={'สี' + name} aria-pressed={current.properties_json.color === color}
+                      style={{ background: color, width: 34, height: 34, padding: 0,
+                        border: current.properties_json.color === color ? '3px solid #176751' : '1px solid #aaa' }}
+                      onClick={() => patchObject({ properties_json: { ...current.properties_json, color } })} />
+                  </Tooltip>)}
+                </div>
                 <label>
                   ชื่อ / รหัส
                   <input

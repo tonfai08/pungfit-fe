@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Radio, Alert } from 'antd';
 import {
   bkApi,
   bkUpload,
@@ -204,6 +205,7 @@ export function EventEditor({ id }: { id: string }) {
     timezone: 'Asia/Bangkok',
     table_selection_mode: 'admin_assign',
     waitlist_enabled: false,
+    payment_required: true,
     payment_due_minutes: 30,
   });
   useEffect(() => {
@@ -238,6 +240,7 @@ export function EventEditor({ id }: { id: string }) {
         'timezone',
         'table_selection_mode',
         'waitlist_enabled',
+        'payment_required',
         'payment_due_minutes',
         'payment_instructions',
         'booking_terms',
@@ -433,6 +436,11 @@ export function EventEditor({ id }: { id: string }) {
           </div>
           <div className="bk-panel">
             <h2>เงื่อนไขการจอง</h2>
+            <Radio.Group aria-label="การชำระเงิน" value={draft.payment_required !== false}
+              onChange={(e) => set('payment_required', e.target.value)}
+              options={[{ label: 'มีการชำระเงิน', value: true }, { label: 'จองฟรี ไม่ต้องชำระเงิน', value: false }]} />
+            <Alert style={{ margin: '16px 0' }} type="info" showIcon
+              title="การตั้งค่านี้ใช้กับการจองใหม่ เมื่อจองฟรีระบบยืนยันให้ทันที ไม่เปลี่ยนยอดหรือสถานะของรายการเดิม" />
             <div className="bk-form-grid">
               <label>
                 สถานะงาน
@@ -466,6 +474,7 @@ export function EventEditor({ id }: { id: string }) {
                   min={1}
                   max={10080}
                   value={draft.payment_due_minutes}
+                  disabled={draft.payment_required === false}
                   onChange={(e) =>
                     set('payment_due_minutes', Number(e.target.value))
                   }
@@ -483,6 +492,7 @@ export function EventEditor({ id }: { id: string }) {
                 วิธีชำระเงิน
                 <textarea
                   value={draft.payment_instructions || ''}
+                  disabled={draft.payment_required === false}
                   onChange={(e) => set('payment_instructions', e.target.value)}
                 />
               </label>

@@ -2,8 +2,11 @@
 /* Payment evidence must be requested with the browser's cookie, not the public image optimizer. */
 /* eslint-disable @next/next/no-img-element */
 import { useCallback, useEffect, useState } from 'react';
+import BookingMap from './BookingMap';
+import SeatingCanvas from './SeatingCanvas';
 import {
   bkApi,
+  BkLayout,
   bkUpload,
   Booking,
   BookingDetail,
@@ -145,6 +148,7 @@ export default function Operations({
           )}
         </div>
       </div>
+      {mode === 'bookings' && <BookingMap eventId={eventId} inventory={inventory} bookings={bookings} onChange={load} />}
       {error && (
         <p role="alert" className="bk-error">
           {error}
@@ -490,6 +494,7 @@ function BookingView({
   onBack: () => void;
   onChange: () => Promise<void>;
 }) {
+  const [layout, setLayout] = useState<BkLayout>();
   const [detail, setDetail] = useState<BookingDetail | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -499,6 +504,7 @@ function BookingView({
   const root = `/events/${eventId}/bookings/${bookingId}`;
   const load = useCallback(async () => {
     const data = await bkApi<BookingDetail>(root);
+    setLayout(await bkApi<BkLayout>(`/events/${eventId}/layout`));
     setDetail(data);
     setSelected(
       Object.fromEntries(
@@ -510,7 +516,7 @@ function BookingView({
         ]),
       ),
     );
-  }, [root]);
+  }, [root, eventId]);
   useEffect(() => {
     load().catch((e) => setError(errorMessage(e)));
   }, [load]);
@@ -594,49 +600,17 @@ function BookingView({
               {item.table_type_id.name} · จอง {item.quantity} โต๊ะ ·{' '}
               {money(item.line_total_satang)}
             </h4>
-            <div className="bk-seat-picker">
-              {inventory.tables
-                .filter(
-                  (table) => table.table_type_id === item.table_type_id._id,
-                )
-                .map((table) => {
-                  const assigned = inventory.assignments.find(
-                    (assignment) => assignment.event_table_id === table._id,
-                  );
-                  const unavailable =
-                    !table.is_bookable ||
-                    !!(assigned && assigned.booking_item_id !== item._id);
-                  const checked = (selected[item._id] || []).includes(
-                    table._id,
-                  );
-                  return (
-                    <label
-                      key={table._id}
-                      className={`${checked ? 'selected' : ''} ${unavailable ? 'unavailable' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={busy || !active || unavailable}
-                        checked={checked}
-                        onChange={(e) =>
-                          setSelected((previous) => ({
-                            ...previous,
-                            [item._id]: e.target.checked
-                              ? [...(previous[item._id] || []), table._id]
-                              : previous[item._id].filter(
-                                  (id) => id !== table._id,
-                                ),
-                          }))
-                        }
-                      />
-                      <strong>{table.code}</strong>
-                      <small>
-                        {unavailable ? 'ไม่ว่าง' : table.zone || 'ว่าง'}
-                      </small>
-                    </label>
-                  );
-                })}
-            </div>
+            {layout && <SeatingCanvas layout={layout} inventory={inventory} selectedIds={selected[item._id] || []}
+              onTableClick={(table) => {
+                const assigned = inventory.assignments.find((a) => a.event_table_id === table._id);
+                if (busy || !active || !table.is_bookable || table.table_type_id !== item.table_type_id._id ||
+                  (assigned && assigned.booking_item_id !== item._id)) return;
+                setSelected((previous) => {
+                  const ids = previous[item._id] || [];
+                  if (!ids.includes(table._id) && ids.length >= item.quantity) return previous;
+                  return { ...previous, [item._id]: ids.includes(table._id) ? ids.filter((id) => id !== table._id) : [...ids, table._id] };
+                });
+              }} />}
             <p>
               เลือกแล้ว {(selected[item._id] || []).length} / {item.quantity}{' '}
               โต๊ะ

@@ -29,6 +29,7 @@ export type BkEvent = {
   timezone: string;
   table_selection_mode: 'customer_select' | 'admin_assign';
   waitlist_enabled: boolean;
+  payment_required?: boolean;
   payment_due_minutes: number;
   payment_instructions?: string;
   booking_terms?: string;
@@ -55,7 +56,7 @@ export type CanvasObject = {
   height: number;
   rotation: number;
   z_index: number;
-  properties_json: { shape: 'round' | 'rect'; capacity: number };
+  properties_json: { shape: 'round' | 'rect'; capacity: number; color?: string };
   table_type_id?: string | null;
   zone?: string;
   is_bookable?: boolean;
@@ -84,6 +85,7 @@ export type BkTable = {
   zone?: string;
 };
 export type Assignment = {
+  booking?: Booking;
   _id: string;
   event_table_id: string;
   booking_item_id: string;
@@ -94,6 +96,7 @@ export type Inventory = {
   assignments: Assignment[];
 };
 export type Booking = {
+  user_id?: string;
   _id: string;
   booking_no: string;
   contact_name: string;
